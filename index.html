@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Probability Casino · The House Always Wins</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/prop-types/prop-types.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-is/umd/react-is.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/resize-observer-polyfill@1.5.1/dist/ResizeObserver.global.js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/recharts@2.15.3/umd/Recharts.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #09090b;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      overflow-x: hidden;
+    }
+    ::-webkit-scrollbar { width: 5px; background: #18181b; }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+    @keyframes pc-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    @keyframes pc-glow { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.22; } }
+    .bg-atmosphere {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(220,38,38,0.12) 0%, transparent 55%),
+                  radial-gradient(ellipse at 50% 100%, rgba(59,130,246,0.07) 0%, transparent 50%);
+    }
+    .bg-grid {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.035;
+      background-image: linear-gradient(rgba(255,255,255,0.15) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px);
+      background-size: 64px 64px;
+    }
+    
+    .lang-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #a1a1aa;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .lang-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+    const { AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } = Recharts;
+
+    // ─── DIZIONARIO BILINGUE ────────────────────────────────────────────────────
+    const DICT = {
+      en: {
+        subtitle: "THE HOUSE ALWAYS WINS",
+        live: "LIVE ENGINE",
+        engine: "PROBABILITY ENGINE v2.0",
+        beat: "BEAT THE ",
+        house: "HOUSE",
+        desc: "An immersive probability laboratory. Spin the wheel, run Monte Carlo convergence simulations, and watch martingale strategies statistically collapse.",
+        hEdge: "House Edge",
+        pRed: "P(Red Win)",
+        safeSys: "Safe Systems",
+        riskRuin: "Risk of Ruin",
+        tabRoulette: "🎡  ROULETTE LAB",
+        tabMC: "📊  MONTE CARLO ROOM",
+        tabMart: "☠  MARTINGALE GRAVEYARD",
+        res: "RESULT",
+        zero: "✦ ZERO",
+        red: "● RED",
+        black: "● BLACK",
+        special: "SPECIAL",
+        even: "EVEN",
+        odd: "ODD",
+        spinBtn: "⚡  SPIN THE WHEEL",
+        spinning: "SPINNING...",
+        betType: "BET TYPE — EVEN MONEY (1:1)",
+        betInfo: "Bet: 50 chips · P(win) = 18/37 ≈ 48.65% · EV = −2.70%",
+        bankroll: "BANKROLL",
+        spins: "SPINS",
+        winRate: "WIN RATE",
+        evSpin: "EV / SPIN",
+        hist: "BANKROLL HISTORY",
+        last12: "LAST 12 RESULTS",
+        mcTitle: "MONTE CARLO ENGINE — BET: RED",
+        mcDesc: "Simulate betting RED on European Roulette. The empirical mean converges to the theoretical expected value:",
+        sims: "SIMULATIONS",
+        empMean: "EMPIRICAL MEAN",
+        theoEv: "THEORETICAL EV",
+        mcConv: "CONVERGENCE — EMPIRICAL MEAN vs THEORETICAL EV",
+        btnSpins: "SPINS",
+        msgConv: "✓ Converged. After {n} spins the empirical mean is within 0.5% of EV.",
+        msgWarn: "⚠ After {n} spins: lost ≈ {c} chips on avg. Keep simulating — the Law of Large Numbers is patient.",
+        martTitle: "MARTINGALE STRATEGY GRAVEYARD",
+        martDesc: "Double your bet after every loss. The strategy feels unbeatable — until a losing streak meets your bankroll ceiling. Each red path is an independent simulation.",
+        martForm: "P(bust) → 1 as n → ∞  ·  Expected ruin: log₂(B/b) consecutive losses",
+        baseBet: "BASE BET",
+        maxSpins: "MAX SPINS",
+        martBtn: "☠  RUN GRAVEYARD",
+        simulating: "SIMULATING...",
+        bust: "WENT BUST",
+        surv: "SURVIVED",
+        paths: "BANKROLL PATHS — 20 INDEPENDENT RUNS",
+        thought: "YOU THOUGHT YOU BEAT PROBABILITY.",
+        disagreed: "PROBABILITY DISAGREED.",
+        footerInfo: "Probability Casino © 2026 · Engineered by Stefano Kolta",
+        footerTech: "React · Recharts · Stochastic Chaos"
+      },
+      it: {
+        subtitle: "IL BANCO VINCE SEMPRE",
+        live: "MOTORE LIVE",
+        engine: "MOTORE STOCASTICO v2.0",
+        beat: "BATTI IL ",
+        house: "BANCO",
+        desc: "Un laboratorio di probabilità immersivo. Gira la ruota, esegui simulazioni di convergenza Monte Carlo e osserva il collasso statistico delle strategie a martingala.",
+        hEdge: "Margine Banco",
+        pRed: "P(Vittoria Rosso)",
+        safeSys: "Sistemi Sicuri",
+        riskRuin: "Rischio di Rovina",
+        tabRoulette: "🎡  LAB ROULETTE",
+        tabMC: "📊  SALA MONTE CARLO",
+        tabMart: "☠  CIMITERO MARTINGALA",
+        res: "RISULTATO",
+        zero: "✦ ZERO",
+        red: "● ROSSO",
+        black: "● NERO",
+        special: "SPECIALE",
+        even: "PARI",
+        odd: "DISPARI",
+        spinBtn: "⚡  GIRA LA RUOTA",
+        spinning: "IL BANCO GIRA...",
+        betType: "TIPO DI PUNTATA (1:1)",
+        betInfo: "Puntata: 50 chips · P(vittoria) = 18/37 ≈ 48.65% · EV = −2.70%",
+        bankroll: "CASSA",
+        spins: "GIRI",
+        winRate: "WIN RATE",
+        evSpin: "EV / GIRO",
+        hist: "STORICO DELLA CASSA",
+        last12: "ULTIMI 12 RISULTATI",
+        mcTitle: "MOTORE MONTE CARLO — PUNTATA: ROSSO",
+        mcDesc: "Simula la puntata sul ROSSO nella Roulette Europea. La media empirica converge al valore atteso teorico:",
+        sims: "SIMULAZIONI",
+        empMean: "MEDIA EMPIRICA",
+        theoEv: "EV TEORICO",
+        mcConv: "CONVERGENZA — MEDIA EMPIRICA vs EV TEORICO",
+        btnSpins: "LANCI",
+        msgConv: "✓ Convergenza raggiunta. Dopo {n} lanci la media empirica è entro lo 0.5% dall'EV.",
+        msgWarn: "⚠ Dopo {n} lanci: persi ≈ {c} chips in media. Continua a simulare — la Legge dei Grandi Numeri è paziente.",
+        martTitle: "CIMITERO DELLA STRATEGIA MARTINGALA",
+        martDesc: "Raddoppia la puntata dopo ogni perdita. La strategia sembra imbattibile — finché una serie di sconfitte non incontra il limite della cassa. Ogni linea rossa è una simulazione indipendente.",
+        martForm: "P(rovina) → 1 per n → ∞  ·  Rovina attesa: log₂(B/b) perdite consecutive",
+        baseBet: "PUNTATA BASE",
+        maxSpins: "GIRI MASSIMI",
+        martBtn: "☠  AVVIA IL CIMITERO",
+        simulating: "SIMULAZIONE...",
+        bust: "BANCAROTTA",
+        surv: "SOPRAVVISSUTI",
+        paths: "TRAIETTORIE CASSA — 20 SIMULAZIONI INDIPENDENTI",
+        thought: "PENSAVI DI BATTERE LA PROBABILITÀ.",
+        disagreed: "LA PROBABILITÀ NON ERA D'ACCORDO.",
+        footerInfo: "Probability Casino © 2026 · Progettato da Stefano Kolta",
+        footerTech: "React · Recharts · Caos Stocastico"
+      }
+    };
+
+    const WHEEL = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+    const RED   = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+    const N = 37, SA = 360 / N;
+    const THEORETICAL_EV = -(1/37);
+
+    const numFill  = n => n === 0 ? "#15803d" : RED.has(n) ? "#dc2626" : "#1c1c1e";
+    const toRad    = d => (d - 90) * Math.PI / 180;
+    const polarPt  = (cx, cy, r, deg) => [cx + r * Math.cos(toRad(deg)), cy + r * Math.sin(toRad(deg))];
+
+    function RouletteWheel({ rotation, spinning }) {
+      const cx = 160, cy = 160, OR = 148, IR = 54;
+      return (
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <div style={{
+            position: "absolute", top: -2, left: "50%", transform: "translateX(-50%)",
+            zIndex: 20, pointerEvents: "none", width: 0, height: 0,
+            borderLeft: "8px solid transparent", borderRight: "8px solid transparent",
+            borderTop: "24px solid #fbbf24", filter: "drop-shadow(0 0 8px rgba(251,191,36,0.8))"
+          }} />
+          <svg width={320} height={320} viewBox="0 0 320 320" style={{
+            display: "block", transform: `rotate(${rotation}deg)`,
+            transition: spinning ? "transform 4.3s cubic-bezier(0.04,0.9,0.12,1.0)" : "none"
+          }}>
+            <circle cx={cx} cy={cy} r={OR+10} fill="#1c1917" stroke="#44403c" strokeWidth={3}/>
+            <circle cx={cx} cy={cy} r={OR+2} fill="none" stroke="#92400e" strokeWidth={1.5}/>
+            {WHEEL.map((num, i) => {
+              const a0 = i*SA, a1 = (i+1)*SA;
+              const [ox0,oy0] = polarPt(cx,cy,OR,a0);
+              const [ox1,oy1] = polarPt(cx,cy,OR,a1);
+              const [ix1,iy1] = polarPt(cx,cy,IR,a1);
+              const [ix0,iy0] = polarPt(cx,cy,IR,a0);
+              const mid = (a0+a1)/2;
+              const [tx,ty] = polarPt(cx,cy,(OR+IR)/2+2,mid);
+              const d = `M${ox0.toFixed(2)},${oy0.toFixed(2)} A${OR},${OR} 0 0,1 ${ox1.toFixed(2)},${oy1.toFixed(2)} L${ix1.toFixed(2)},${iy1.toFixed(2)} A${IR},${IR} 0 0,0 ${ix0.toFixed(2)},${iy0.toFixed(2)} Z`;
+              return (
+                <g key={i}>
+                  <path d={d} fill={numFill(num)} stroke="#3f3f46" strokeWidth={0.6}/>
+                  <text x={tx.toFixed(2)} y={ty.toFixed(2)} textAnchor="middle" dominantBaseline="middle"
+                    fontSize={num<10?9:8} fontWeight="700" fill="rgba(255,255,255,0.92)"
+                    transform={`rotate(${mid.toFixed(1)},${tx.toFixed(2)},${ty.toFixed(2)})`}>{num}</text>
+                </g>
+              );
+            })}
+            <circle cx={cx} cy={cy} r={IR} fill="#14532d" stroke="#166534" strokeWidth={1.5}/>
+            <circle cx={cx} cy={cy} r={IR-6} fill="none" stroke="#15803d" strokeWidth={1} strokeDasharray="4,4" opacity={0.4}/>
+            <circle cx={cx} cy={cy} r={16} fill="#1c1917" stroke="#92400e" strokeWidth={1.5}/>
+            <circle cx={cx} cy={cy} r={9} fill="#fbbf24"/>
+            <circle cx={cx} cy={cy} r={4} fill="#78350f"/>
+          </svg>
+        </div>
+      );
+    }
+
+    function RouletteTab({ t }) {
+      const [rotation, setRotation] = useState(0);
+      const [spinning, setSpinning] = useState(false);
+      const [result, setResult] = useState(null);
+      const [bet, setBet] = useState("red");
+      const [stats, setStats] = useState({ spins:0, wins:0, bankroll:1000, history:[] });
+      const rotRef = useRef(0);
+      const BET = 50;
+
+      const checkWin = (n,b) => {
+        if(n===0) return false;
+        if(b==="red") return RED.has(n);
+        if(b==="black") return !RED.has(n);
+        if(b==="even") return n%2===0;
+        if(b==="odd") return n%2!==0;
+        if(b==="low") return n<=18;
+        if(b==="high") return n>=19;
+        return false;
+      };
+
+      const spin = () => {
+        if(spinning) return;
+        const idx = Math.floor(Math.random()*N);
+        const num = WHEEL[idx];
+        const targetAngle = 360 - (idx * SA + SA / 2);
+        const currentRotation = rotRef.current;
+        const baseRotation = currentRotation - (currentRotation % 360);
+        let newRot = baseRotation + 5 * 360 + targetAngle;
+        if (newRot <= currentRotation) newRot += 360;
+        
+        rotRef.current = newRot;
+        setSpinning(true);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          setRotation(newRot);
+          setTimeout(() => {
+            setSpinning(false);
+            setResult(num);
+            const win = checkWin(num, bet);
+            setStats(prev => ({
+              spins: prev.spins+1,
+              wins: prev.wins+(win?1:0),
+              bankroll: prev.bankroll + (win?BET:-BET),
+              history: [...prev.history.slice(-59), {
+                spin: prev.spins+1,
+                bankroll: prev.bankroll + (win?BET:-BET),
+                num, win
+              }]
+            }));
+          }, 4300);
+        }));
+      };
+
+      const BETS = [
+        { id:"red", label: t.red.replace("● ", ""), color:"#dc2626" }, 
+        { id:"black", label: t.black.replace("● ", ""), color:"#71717a" },
+        { id:"even", label: t.even, color:"#2563eb" }, 
+        { id:"odd", label: t.odd, color:"#7c3aed" },
+        { id:"low", label:"1–18", color:"#0e7490" }, 
+        { id:"high", label:"19–36", color:"#065f46" }
+      ];
+
+      const profit = stats.bankroll-1000;
+      const winRate = stats.spins>0 ? (stats.wins/stats.spins*100).toFixed(1) : "—";
+      const evPerSpin = stats.spins>0 ? (profit/stats.spins).toFixed(2) : "—";
+      const panel = { background: "rgba(255,255,255,0.03)", borderRadius:16, padding:16, border:"1px solid rgba(255,255,255,0.07)" };
+      const panelLabel = { color:"#71717a", fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", margin:"0 0 10px 0" };
+      const metricCard = { background:"rgba(255,255,255,0.025)", borderRadius:12, padding:"12px 14px", border:"1px solid rgba(255,255,255,0.06)" };
+      const metricLabel = { color:"#52525b", fontSize:10, letterSpacing:"0.18em", textTransform:"uppercase", margin:"0 0 4px 0" };
+      const metricValue = { fontSize:21, fontWeight:900, margin:0, fontFamily:"monospace" };
+
+      return (
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:28, alignItems:"start" }}>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:20 }}>
+            <RouletteWheel rotation={rotation} spinning={spinning}/>
+            {result!==null && (
+              <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+                <div style={{ width:54, height:54, borderRadius:12, flexShrink:0, background:numFill(result),
+                  display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:900, color:"white",
+                  boxShadow:`0 0 20px ${numFill(result)}70` }}>{result}</div>
+                <div><p style={{ ...panelLabel, margin:0 }}>{t.res}</p>
+                  <p style={{ fontSize:15, fontWeight:700, margin:"4px 0 0", fontFamily:"monospace",
+                    color: result===0?"#4ade80":RED.has(result)?"#f87171":"#d4d4d8" }}>
+                    {result===0 ? t.zero : RED.has(result) ? t.red : t.black} &nbsp;·&nbsp;
+                    {result===0 ? t.special : result%2===0 ? t.even : t.odd}
+                  </p>
+                </div>
+              </div>
+            )}
+            <button onClick={spin} disabled={spinning} style={{
+              width:"100%", maxWidth:280, padding:"14px 0", borderRadius:14, border:"none",
+              cursor:spinning?"not-allowed":"pointer", background:spinning?"rgba(63,63,70,0.5)":"linear-gradient(135deg,#dc2626,#991b1b)",
+              color:spinning?"#71717a":"white", fontWeight:800, fontSize:14, letterSpacing:"0.15em", textTransform:"uppercase",
+              boxShadow:spinning?"none":"0 0 30px rgba(220,38,38,0.35)", transition:"all 0.2s"
+            }}>{spinning ? t.spinning : t.spinBtn}</button>
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            <div style={panel}>
+              <p style={panelLabel}>{t.betType}</p>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
+                {BETS.map(b=>(
+                  <button key={b.id} onClick={()=>setBet(b.id)} style={{
+                    padding:"9px 10px", borderRadius:10, cursor:"pointer",
+                    border:`1.5px solid ${bet===b.id?b.color:"rgba(255,255,255,0.08)"}`,
+                    background:bet===b.id?`${b.color}1A`:"transparent", color:bet===b.id?"white":"#71717a",
+                    fontWeight:700, fontSize:12, letterSpacing:"0.08em", transition:"all 0.12s"
+                  }}>{b.label}</button>
+                ))}
+              </div>
+              <p style={{ color:"#3f3f46", fontSize:11, margin:0 }}>{t.betInfo}</p>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              {[{ l:t.bankroll, v:`$${stats.bankroll}`, c:profit>=0?"#4ade80":"#f87171" },
+                { l:t.spins, v:stats.spins, c:"#e4e4e7" },
+                { l:t.winRate, v:winRate==="—"?"—":`${winRate}%`, c:"#94a3b8" },
+                { l:t.evSpin, v:evPerSpin==="—"?"—":`$${evPerSpin}`, c:"#f87171" }
+              ].map(s=>(
+                <div key={s.l} style={metricCard}>
+                  <p style={metricLabel}>{s.l}</p>
+                  <p style={{ ...metricValue, color:s.c }}>{s.v}</p>
+                </div>
+              ))}
+            </div>
+            {stats.history.length>1 && (
+              <div style={panel}>
+                <p style={panelLabel}>{t.hist}</p>
+                <ResponsiveContainer width="100%" height={105}>
+                  <AreaChart data={stats.history} margin={{ top:4,right:4,bottom:0,left:-24 }}>
+                    <defs><linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#dc2626" stopOpacity={0.28}/>
+                      <stop offset="95%" stopColor="#dc2626" stopOpacity={0}/>
+                    </linearGradient></defs>
+                    <XAxis dataKey="spin" stroke="#3f3f46" tick={{ fontSize:9, fill:"#52525b" }}/>
+                    <YAxis stroke="#3f3f46" tick={{ fontSize:9, fill:"#52525b" }} domain={["auto","auto"]}/>
+                    <Tooltip contentStyle={{ background:"#18181b", border:"1px solid #3f3f46", borderRadius:8, fontSize:11 }}
+                      formatter={v=>[`$${v}`, t.bankroll]}/>
+                    <ReferenceLine y={1000} stroke="#3f3f46" strokeDasharray="3 3"/>
+                    <Area type="monotone" dataKey="bankroll" stroke="#dc2626" fill="url(#rg)" strokeWidth={2} dot={false}/>
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            {stats.history.length>0 && (
+              <div style={panel}>
+                <p style={panelLabel}>{t.last12}</p>
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                  {stats.history.slice(-12).map((h,i)=>(
+                    <div key={i} style={{ width:30, height:30, borderRadius:7, flexShrink:0, background:numFill(h.num),
+                      display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:800, color:"white",
+                      border:`2px solid ${h.win?"#4ade80":"transparent"}` }}>{h.num}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function MonteCarloTab({ t }) {
+      const [data, setData] = useState([]);
+      const [totalSims, setTotalSims] = useState(0);
+      const [running, setRunning] = useState(false);
+      const panel = { background:"rgba(255,255,255,0.03)", borderRadius:16, padding:16, border:"1px solid rgba(255,255,255,0.07)" };
+      const panelLabel = { color:"#71717a", fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", margin:"0 0 10px 0" };
+      const metricCard = { background:"rgba(255,255,255,0.025)", borderRadius:12, padding:"12px 14px", border:"1px solid rgba(255,255,255,0.06)" };
+      const metricLabel = { color:"#52525b", fontSize:10, letterSpacing:"0.18em", textTransform:"uppercase", margin:"0 0 4px 0" };
+      const metricValue = { fontSize:21, fontWeight:900, margin:0, fontFamily:"monospace" };
+
+      const runSims = (n) => {
+        if(running) return;
+        setRunning(true);
+        setTimeout(() => {
+          let sum=0;
+          const MAX_POINTS=300;
+          const step=Math.max(1,Math.floor(n/MAX_POINTS));
+          const pts=[];
+          for(let i=0;i<n;i++){
+            const idx = Math.floor(Math.random()*37);
+            const num = WHEEL[idx];
+            sum += (num!==0 && RED.has(num)) ? 1 : -1;
+            if(i%step===0 || i===n-1) pts.push({ i:i+1, mean:sum/(i+1), theory:THEORETICAL_EV });
+          }
+          setData(pts);
+          setTotalSims(n);
+          setRunning(false);
+        },0);
+      };
+
+      const finalMean = data.length>0 ? data[data.length-1].mean : null;
+      const converged = finalMean!==null && Math.abs(finalMean-THEORETICAL_EV)<0.005;
+
+      return (
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          <div style={panel}>
+            <p style={panelLabel}>{t.mcTitle}</p>
+            <p style={{ color:"#52525b", fontSize:13, margin:"0 0 6px", lineHeight:1.6 }}>{t.mcDesc}</p>
+            <p style={{ color:"#fbbf24", fontFamily:"monospace", fontSize:13, margin:"0 0 18px" }}>
+              μ̂ₙ = (1/n) Σ Xᵢ&nbsp;&nbsp;→&nbsp;&nbsp;E[X] = −1/37 ≈ −2.70%
+            </p>
+            <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+              {[1000,10000,100000].map(n=>(
+                <button key={n} onClick={()=>runSims(n)} disabled={running} style={{
+                  padding:"11px 22px", borderRadius:12, cursor:running?"not-allowed":"pointer",
+                  background:running?"rgba(63,63,70,0.4)":"rgba(220,38,38,0.12)",
+                  border:`1px solid ${running?"rgba(255,255,255,0.06)":"rgba(220,38,38,0.3)"}`,
+                  color:running?"#52525b":"#f87171", fontWeight:700, fontSize:13, letterSpacing:"0.05em"
+                }}>{running?"...":`${n.toLocaleString()} ${t.btnSpins}`}</button>
+              ))}
+            </div>
+          </div>
+          {data.length>0 && (
+            <>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 }}>
+                {[{ l:t.sims, v:totalSims.toLocaleString(), c:"#e4e4e7" },
+                  { l:t.empMean, v:`${(finalMean*100).toFixed(3)}%`, c:"#f87171" },
+                  { l:t.theoEv, v:"−2.70%", c:"#94a3b8" }
+                ].map(s=>(
+                  <div key={s.l} style={metricCard}>
+                    <p style={metricLabel}>{s.l}</p>
+                    <p style={{ ...metricValue, color:s.c }}>{s.v}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={panel}>
+                <p style={panelLabel}>{t.mcConv}</p>
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={data} margin={{ top:8,right:16,bottom:0,left:-10 }}>
+                    <XAxis dataKey="i" stroke="#3f3f46" tick={{ fontSize:10, fill:"#52525b" }}
+                      tickFormatter={v=>v>=1000?`${(v/1000).toFixed(0)}k`:v}/>
+                    <YAxis stroke="#3f3f46" tick={{ fontSize:10, fill:"#52525b" }}
+                      tickFormatter={v=>`${(v*100).toFixed(1)}%`}/>
+                    <Tooltip contentStyle={{ background:"#18181b", border:"1px solid #3f3f46", borderRadius:8, fontSize:11 }}
+                      formatter={(v,name)=>[`${(v*100).toFixed(3)}%`, name==="mean" ? t.empMean : t.theoEv]}/>
+                    <ReferenceLine y={THEORETICAL_EV} stroke="#3b82f6" strokeDasharray="5 3" strokeWidth={1.5}/>
+                    <Line type="monotone" dataKey="mean" stroke="#dc2626" dot={false} strokeWidth={2} name="mean" isAnimationActive={false}/>
+                    <Line type="monotone" dataKey="theory" stroke="#3b82f6" dot={false} strokeWidth={1.5} name="theory" strokeDasharray="5 3" isAnimationActive={false}/>
+                  </LineChart>
+                </ResponsiveContainer>
+                <div style={{ display:"flex", gap:20, marginTop:10 }}>
+                  {[["#dc2626",t.empMean],["#3b82f6",`${t.theoEv} (−2.70%)`]].map(([c,l])=>(
+                    <div key={l} style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:"#71717a" }}>
+                      <div style={{ width:18, height:2, background:c, borderRadius:1 }}/>{l}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ ...panel, borderColor: converged?"rgba(74,222,128,0.2)":"rgba(220,38,38,0.2)",
+                background: converged?"rgba(74,222,128,0.04)":"rgba(220,38,38,0.04)" }}>
+                <p style={{ color: converged?"#4ade80":"#f87171", fontFamily:"monospace", fontSize:13, margin:0, lineHeight:1.6 }}>
+                  {converged ? t.msgConv.replace('{n}', totalSims.toLocaleString()) : t.msgWarn.replace('{n}', totalSims.toLocaleString()).replace('{c}', Math.abs(Math.round(finalMean*totalSims*50)).toLocaleString())}
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    function MartingaleTab({ t }) {
+      const [paths, setPaths] = useState([]);
+      const [summary, setSummary] = useState(null);
+      const [running, setRunning] = useState(false);
+      const [params, setParams] = useState({ bankroll:1000, baseBet:10, maxSpins:250 });
+      const panel = { background:"rgba(255,255,255,0.03)", borderRadius:16, padding:16, border:"1px solid rgba(255,255,255,0.07)" };
+      const panelLabel = { color:"#71717a", fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", margin:"0 0 10px 0" };
+      const metricCard = { background:"rgba(255,255,255,0.025)", borderRadius:12, padding:"12px 14px", border:"1px solid rgba(255,255,255,0.06)" };
+      const metricLabel = { color:"#52525b", fontSize:10, letterSpacing:"0.18em", textTransform:"uppercase", margin:"0 0 4px 0" };
+      const metricValue = { fontSize:21, fontWeight:900, margin:0, fontFamily:"monospace" };
+
+      const simulate = () => {
+        if(running) return;
+        setRunning(true);
+        setTimeout(() => {
+          const N_PATHS=20;
+          let busts=0;
+          const allPaths=[];
+          for(let p=0;p<N_PATHS;p++){
+            let bankroll=params.bankroll;
+            let bet=params.baseBet;
+            const path=[bankroll];
+            for(let s=1;s<=params.maxSpins;s++){
+              if(bankroll<=0 || bankroll<bet){ busts++; break; }
+              const idx = Math.floor(Math.random()*37);
+              const num = WHEEL[idx];
+              const win = num!==0 && RED.has(num);
+              bankroll += win?bet:-bet;
+              bankroll = Math.max(0,bankroll);
+              bet = win?params.baseBet:bet*2;
+              path.push(bankroll);
+              if(bankroll<=0){ busts++; break; }
+            }
+            allPaths.push(path);
+          }
+          const maxLen = Math.max(...allPaths.map(p=>p.length));
+          const chartData=[];
+          for(let i=0;i<maxLen;i++){
+            const pt={ spin:i };
+            allPaths.forEach((path,pi)=>{ pt[`p${pi}`]=path[i]??0; });
+            chartData.push(pt);
+          }
+          setPaths(chartData);
+          setSummary({ busts, survived:N_PATHS-busts, n:N_PATHS });
+          setRunning(false);
+        },0);
+      };
+
+      const RED_SHADES = ["#dc2626","#ef4444","#f87171","#b91c1c","#991b1b",
+                          "#dc2626","#ef4444","#f87171","#b91c1c","#991b1b",
+                          "#dc2626","#ef4444","#f87171","#b91c1c","#991b1b",
+                          "#dc2626","#ef4444","#f87171","#b91c1c","#991b1b"];
+
+      return (
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+          <div style={panel}>
+            <p style={panelLabel}>{t.martTitle}</p>
+            <p style={{ color:"#52525b", fontSize:13, margin:"0 0 6px", lineHeight:1.6 }}>{t.martDesc}</p>
+            <p style={{ color:"#fbbf24", fontFamily:"monospace", fontSize:12, margin:"0 0 18px" }}>{t.martForm}</p>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16, marginBottom:18 }}>
+              {[{ key:"bankroll", label:t.bankroll, min:200, max:10000, step:100 },
+                { key:"baseBet", label:t.baseBet, min:1, max:100, step:1 },
+                { key:"maxSpins", label:t.maxSpins, min:50, max:500, step:25 }
+              ].map(({key,label,min,max,step})=>(
+                <div key={key}>
+                  <p style={{ ...panelLabel, marginBottom:6 }}>{label}: <span style={{ color:"#e4e4e7", fontFamily:"monospace" }}>{params[key].toLocaleString()}</span></p>
+                  <input type="range" min={min} max={max} step={step} value={params[key]}
+                    onChange={e=>setParams(p=>({...p,[key]:+e.target.value}))}
+                    style={{ width:"100%", accentColor:"#dc2626" }}/>
+                </div>
+              ))}
+            </div>
+            <button onClick={simulate} disabled={running} style={{
+              padding:"12px 28px", borderRadius:12, border:"none", cursor:running?"not-allowed":"pointer",
+              background:running?"rgba(63,63,70,0.5)":"linear-gradient(135deg,#dc2626,#7f1d1d)",
+              color:running?"#71717a":"white", fontWeight:800, fontSize:14, letterSpacing:"0.1em", textTransform:"uppercase",
+              boxShadow:running?"none":"0 0 24px rgba(220,38,38,0.3)", transition:"all 0.2s"
+            }}>{running ? t.simulating : t.martBtn}</button>
+          </div>
+          {summary && (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 }}>
+              {[{ l:t.sims, v:summary.n, c:"#e4e4e7" },
+                { l:t.bust, v:`${summary.busts} (${Math.round(summary.busts/summary.n*100)}%)`, c:"#f87171" },
+                { l:t.surv, v:`${summary.survived} (${Math.round(summary.survived/summary.n*100)}%)`, c:"#4ade80" }
+              ].map(s=>(
+                <div key={s.l} style={metricCard}>
+                  <p style={metricLabel}>{s.l}</p>
+                  <p style={{ ...metricValue, color:s.c }}>{s.v}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {paths.length>0 && (
+            <>
+              <div style={panel}>
+                <p style={panelLabel}>{t.paths}</p>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={paths} margin={{ top:8,right:16,bottom:0,left:-10 }}>
+                    <XAxis dataKey="spin" stroke="#3f3f46" tick={{ fontSize:10, fill:"#52525b" }}
+                      label={{ value:"Spin #", fill:"#52525b", fontSize:10, position:"insideBottomRight", offset:-4 }}/>
+                    <YAxis stroke="#3f3f46" tick={{ fontSize:10, fill:"#52525b" }} tickFormatter={v=>`$${v}`}/>
+                    <Tooltip contentStyle={{ background:"#18181b", border:"1px solid #3f3f46", borderRadius:8, fontSize:11 }}
+                      formatter={v=>[`$${v}`,""]}/>
+                    <ReferenceLine y={params.bankroll} stroke="#52525b" strokeDasharray="3 3"/>
+                    {Array.from({length:20},(_,i)=>(
+                      <Line key={i} type="monotone" dataKey={`p${i}`} stroke={RED_SHADES[i]} dot={false}
+                        strokeWidth={1.5} opacity={0.65} isAnimationActive={false}/>
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div style={{ ...panel, borderColor:"rgba(220,38,38,0.25)", background:"rgba(220,38,38,0.04)",
+                textAlign:"center", padding:"24px 20px" }}>
+                <p style={{ color:"#f87171", fontSize:20, fontWeight:900, fontFamily:"monospace", letterSpacing:"0.04em", margin:"0 0 6px" }}>
+                  {t.thought}
+                </p>
+                <p style={{ color:"#7f1d1d", fontSize:16, fontWeight:700, margin:0, fontFamily:"monospace" }}>
+                  {t.disagreed}
+                </p>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    function App() {
+      const [tab, setTab] = useState("roulette");
+      const [lang, setLang] = useState("en"); // Toggle state
+      
+      const t = DICT[lang]; // Lingua attuale
+
+      const HERO_STATS = [
+        { v:"−2.70%", l: t.hEdge }, { v:"18/37", l: t.pRed },
+        { v:"0.000%", l: t.safeSys }, { v:"∞", l: t.riskRuin }
+      ];
+      const TABS = [
+        { id:"roulette", label: t.tabRoulette },
+        { id:"montecarlo", label: t.tabMC },
+        { id:"martingale", label: t.tabMart }
+      ];
+
+      return (
+        <div style={{ minHeight:"100vh", background:"#09090b", color:"white", fontFamily:"'JetBrains Mono', monospace", position:"relative" }}>
+          <div className="bg-atmosphere"></div>
+          <div className="bg-grid"></div>
+          <header style={{ position:"relative", zIndex:10, display:"flex", alignItems:"center", justifyContent:"space-between",
+            padding:"18px 32px", borderBottom:"1px solid rgba(255,255,255,0.07)", backdropFilter:"blur(12px)", background:"rgba(9,9,11,0.85)" }}>
+            <div>
+              <h1 style={{ fontFamily:"'Bebas Neue', Impact, sans-serif", fontSize:26, letterSpacing:"0.3em", textTransform:"uppercase", margin:0 }}>
+                🎰 PROBABILITY CASINO
+              </h1>
+              <p style={{ color:"#52525b", fontSize:10, letterSpacing:"0.22em", textTransform:"uppercase", margin:"3px 0 0" }}>{t.subtitle}</p>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap: 16 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ade80", animation:"pc-pulse 2s infinite" }}/>
+                <span style={{ color:"#52525b", fontSize:11, letterSpacing:"0.12em" }}>{t.live}</span>
+              </div>
+              <button 
+                className="lang-btn" 
+                onClick={() => setLang(lang === 'en' ? 'it' : 'en')}
+              >
+                {lang === 'en' ? '🇮🇹 ITA' : '🇬🇧 ENG'}
+              </button>
+            </div>
+          </header>
+          <section style={{ position:"relative", zIndex:5, maxWidth:1100, margin:"0 auto", padding:"52px 32px 40px", textAlign:"center" }}>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:8, border:"1px solid rgba(220,38,38,0.3)",
+              background:"rgba(220,38,38,0.08)", padding:"5px 16px", borderRadius:100, marginBottom:20,
+              fontSize:11, color:"#f87171", letterSpacing:"0.16em", textTransform:"uppercase" }}>
+              <span style={{ width:5, height:5, borderRadius:"50%", background:"#dc2626", display:"inline-block", animation:"pc-pulse 1.5s infinite" }}/>
+              {t.engine}
+            </div>
+            <h2 style={{ fontFamily:"'Bebas Neue', Impact, sans-serif", fontSize:"clamp(48px,7vw,90px)", lineHeight:1,
+              margin:"0 0 20px", letterSpacing:"0.03em" }}>
+              {t.beat} <span style={{ color:"#dc2626" }}>{t.house}</span>
+            </h2>
+            <p style={{ color:"#71717a", fontSize:14, maxWidth:520, margin:"0 auto 36px", lineHeight:1.7 }}>
+              {t.desc}
+            </p>
+            <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
+              {HERO_STATS.map(s=>(
+                <div key={s.l} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)",
+                  borderRadius:14, padding:"14px 20px", minWidth:100 }}>
+                  <p style={{ fontFamily:"'Bebas Neue', Impact, sans-serif", fontSize:26, color:"#e4e4e7", margin:0 }}>{s.v}</p>
+                  <p style={{ fontSize:10, color:"#52525b", textTransform:"uppercase", letterSpacing:"0.1em", margin:"3px 0 0" }}>{s.l}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+          <div style={{ position:"relative", zIndex:10, maxWidth:1100, margin:"0 auto", padding:"0 32px 60px" }}>
+            <div style={{ display:"flex", gap:3, marginBottom:24, background:"rgba(255,255,255,0.025)",
+              borderRadius:14, padding:4, border:"1px solid rgba(255,255,255,0.06)" }}>
+              {TABS.map(tabItem=>(
+                <button key={tabItem.id} onClick={()=>setTab(tabItem.id)} style={{
+                  flex:1, padding:"11px 12px", borderRadius:11, border:"none", cursor:"pointer",
+                  background:tab===tabItem.id?"rgba(220,38,38,0.14)":"transparent",
+                  borderBottom:`2px solid ${tab===tabItem.id?"#dc2626":"transparent"}`,
+                  color:tab===tabItem.id?"#f87171":"#52525b", fontFamily:"'JetBrains Mono', monospace",
+                  fontWeight:700, fontSize:11, letterSpacing:"0.08em", textTransform:"uppercase", transition:"all 0.14s"
+                }}>{tabItem.label}</button>
+              ))}
+            </div>
+            {tab==="roulette" && <RouletteTab t={t} />}
+            {tab==="montecarlo" && <MonteCarloTab t={t} />}
+            {tab==="martingale" && <MartingaleTab t={t} />}
+          </div>
+          <footer style={{ position:"relative", zIndex:5, borderTop:"1px solid rgba(255,255,255,0.06)",
+            padding:"18px 32px", display:"flex", justifyContent:"space-between", alignItems:"center",
+            color:"#3f3f46", fontSize:11, letterSpacing:"0.08em" }}>
+            <span>{t.footerInfo}</span>
+            <span>{t.footerTech}</span>
+          </footer>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
