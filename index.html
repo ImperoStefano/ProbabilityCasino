@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Probability Casino · The House Always Wins</title>
   
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
     ::-webkit-scrollbar { width: 5px; background: #18181b; }
     ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
     @keyframes pc-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-    @keyframes pc-glow { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.22; } }
+
     .bg-atmosphere {
       position: fixed; inset: 0; pointer-events: none; z-index: 0;
       background: radial-gradient(ellipse at 50% 0%, rgba(220,38,38,0.12) 0%, transparent 55%),
@@ -39,25 +39,142 @@
                         linear-gradient(90deg, rgba(255,255,255,0.15) 1px, transparent 1px);
       background-size: 64px 64px;
     }
-    
-    .lang-btn {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      color: #a1a1aa;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+
+    /* ── Header ── */
+    .pc-header {
+      position: relative; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 32px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      backdrop-filter: blur(12px);
+      background: rgba(9,9,11,0.85);
     }
-    .lang-btn:hover {
-      background: rgba(255,255,255,0.1);
-      color: #fff;
+    .pc-header-right { display: flex; align-items: center; gap: 16px; }
+    .pc-live { display: flex; align-items: center; gap: 8px; }
+    .pc-live-label { color: #52525b; font-size: 11px; letter-spacing: 0.12em; }
+
+    /* ── Content padding ── */
+    .pc-content { position: relative; z-index: 10; max-width: 1100px; margin: 0 auto; padding: 0 32px 60px; }
+    .pc-hero    { position: relative; z-index: 5;  max-width: 1100px; margin: 0 auto; padding: 48px 32px 36px; text-align: center; }
+
+    /* ── Roulette grid: 2-col on desktop, 1-col on mobile ── */
+    .roulette-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .roulette-wheel-col {
+      display: flex; flex-direction: column; align-items: center; gap: 20px;
+    }
+    /* SVG wheel wrapper — scales down on narrow screens */
+    .wheel-svg-wrap {
+      position: relative; display: inline-block;
+      width: 100%; max-width: 320px;
+    }
+    .wheel-svg-wrap svg {
+      display: block; width: 100%; height: auto;
+    }
+    .wheel-pin {
+      position: absolute; top: -2px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 20; pointer-events: none;
+      width: 0; height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 24px solid #fbbf24;
+      filter: drop-shadow(0 0 8px rgba(251,191,36,0.8));
+    }
+
+    /* ── 3-col grids ── */
+    .grid-3col { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* ── Sliders row ── */
+    .sliders-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 18px; }
+
+    /* ── Tabs ── */
+    .tab-bar { display: flex; gap: 3px; margin-bottom: 24px;
+      background: rgba(255,255,255,0.025); border-radius: 14px; padding: 4px;
+      border: 1px solid rgba(255,255,255,0.06); }
+    .tab-btn {
+      flex: 1; padding: 11px 8px; border-radius: 11px; border: none; cursor: pointer;
+      font-family: 'JetBrains Mono', monospace; font-weight: 700;
+      font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+      transition: all 0.14s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    /* Tab full labels — shown on desktop */
+    .tab-label-full  { display: inline; }
+    .tab-label-short { display: none;   }
+
+    /* ── Bet buttons ── */
+    .bet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .bet-btn  { padding: 11px 10px; border-radius: 10px; cursor: pointer; min-height: 44px;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-weight: 700; font-size: 12px; letter-spacing: 0.08em; transition: all 0.12s; }
+
+    /* ── MC simulation buttons ── */
+    .mc-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* ── Hero stats ── */
+    .hero-stats { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── Footer ── */
+    .pc-footer {
+      position: relative; z-index: 5;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 18px 32px;
+      display: flex; justify-content: space-between; align-items: center;
+      color: #3f3f46; font-size: 11px; letter-spacing: 0.08em; gap: 8px;
+    }
+
+    /* ── Lang button ── */
+    .lang-btn {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      color: #a1a1aa; padding: 7px 12px; border-radius: 20px; min-height: 36px;
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+    }
+    .lang-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+    /* ── MOBILE breakpoint (≤ 640px) ─────────────────────────────── */
+    @media (max-width: 640px) {
+      .pc-header { padding: 12px 16px; }
+      .pc-live-label { display: none; }          /* keep dot, hide text */
+      .pc-hero    { padding: 32px 16px 24px; }
+      .pc-content { padding: 0 16px 48px; }
+      .pc-footer  { padding: 16px; flex-direction: column; align-items: flex-start; gap: 4px; }
+
+      /* Roulette stacks vertically */
+      .roulette-grid { grid-template-columns: 1fr; gap: 20px; }
+      .wheel-svg-wrap { max-width: 280px; margin: 0 auto; }
+
+      /* Metrics */
+      .grid-3col   { grid-template-columns: 1fr 1fr; }
+      .sliders-row { grid-template-columns: 1fr; gap: 12px; }
+
+      /* Tabs: show short label */
+      .tab-label-full  { display: none;   }
+      .tab-label-short { display: inline; }
+      .tab-btn { font-size: 10px; padding: 10px 4px; letter-spacing: 0; }
+
+      /* Charts shorter on mobile */
+      .chart-tall   { height: 190px !important; }
+      .chart-medium { height: 140px !important; }
+
+      /* MC buttons stack */
+      .mc-buttons { flex-direction: column; }
+      .mc-buttons button { width: 100%; }
+    }
+
+    /* ── TABLET breakpoint (641px – 860px) ───────────────────────── */
+    @media (min-width: 641px) and (max-width: 860px) {
+      .pc-header  { padding: 14px 20px; }
+      .pc-hero    { padding: 40px 20px 28px; }
+      .pc-content { padding: 0 20px 52px; }
+      .roulette-grid { grid-template-columns: 1fr; gap: 24px; }
+      .wheel-svg-wrap { max-width: 300px; margin: 0 auto; }
+      .sliders-row { grid-template-columns: 1fr 1fr; gap: 14px; }
     }
   </style>
 </head>
@@ -82,9 +199,9 @@
         pRed: "P(Red Win)",
         safeSys: "Safe Systems",
         riskRuin: "Risk of Ruin",
-        tabRoulette: "🎡  ROULETTE LAB",
-        tabMC: "📊  MONTE CARLO ROOM",
-        tabMart: "☠  MARTINGALE GRAVEYARD",
+        tabRoulette: "🎡  ROULETTE LAB",     tabRouletteS: "🎡",
+        tabMC: "📊  MONTE CARLO ROOM",        tabMCS: "📊",
+        tabMart: "☠  MARTINGALE GRAVEYARD",  tabMartS: "☠",
         res: "RESULT",
         zero: "✦ ZERO",
         red: "● RED",
@@ -137,9 +254,9 @@
         pRed: "P(Vittoria Rosso)",
         safeSys: "Sistemi Sicuri",
         riskRuin: "Rischio di Rovina",
-        tabRoulette: "🎡  LAB ROULETTE",
-        tabMC: "📊  SALA MONTE CARLO",
-        tabMart: "☠  CIMITERO MARTINGALA",
+        tabRoulette: "🎡  LAB ROULETTE",      tabRouletteS: "🎡",
+        tabMC: "📊  SALA MONTE CARLO",         tabMCS: "📊",
+        tabMart: "☠  CIMITERO MARTINGALA",    tabMartS: "☠",
         res: "RISULTATO",
         zero: "✦ ZERO",
         red: "● ROSSO",
@@ -195,15 +312,10 @@
     function RouletteWheel({ rotation, spinning }) {
       const cx = 160, cy = 160, OR = 148, IR = 54;
       return (
-        <div style={{ position: "relative", display: "inline-block" }}>
-          <div style={{
-            position: "absolute", top: -2, left: "50%", transform: "translateX(-50%)",
-            zIndex: 20, pointerEvents: "none", width: 0, height: 0,
-            borderLeft: "8px solid transparent", borderRight: "8px solid transparent",
-            borderTop: "24px solid #fbbf24", filter: "drop-shadow(0 0 8px rgba(251,191,36,0.8))"
-          }} />
-          <svg width={320} height={320} viewBox="0 0 320 320" style={{
-            display: "block", transform: `rotate(${rotation}deg)`,
+        <div className="wheel-svg-wrap">
+          <div className="wheel-pin" />
+          <svg viewBox="0 0 320 320" style={{
+            transform: `rotate(${rotation}deg)`,
             transition: spinning ? "transform 4.3s cubic-bezier(0.04,0.9,0.12,1.0)" : "none"
           }}>
             <circle cx={cx} cy={cy} r={OR+10} fill="#1c1917" stroke="#44403c" strokeWidth={3}/>
@@ -307,8 +419,8 @@
       const metricValue = { fontSize:21, fontWeight:900, margin:0, fontFamily:"monospace" };
 
       return (
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:28, alignItems:"start" }}>
-          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:20 }}>
+        <div className="roulette-grid">
+          <div className="roulette-wheel-col">
             <RouletteWheel rotation={rotation} spinning={spinning}/>
             {result!==null && (
               <div style={{ display:"flex", alignItems:"center", gap:14 }}>
@@ -324,29 +436,34 @@
                 </div>
               </div>
             )}
-            <button onClick={spin} disabled={spinning} style={{
-              width:"100%", maxWidth:280, padding:"14px 0", borderRadius:14, border:"none",
-              cursor:spinning?"not-allowed":"pointer", background:spinning?"rgba(63,63,70,0.5)":"linear-gradient(135deg,#dc2626,#991b1b)",
-              color:spinning?"#71717a":"white", fontWeight:800, fontSize:14, letterSpacing:"0.15em", textTransform:"uppercase",
-              boxShadow:spinning?"none":"0 0 30px rgba(220,38,38,0.35)", transition:"all 0.2s"
-            }}>{spinning ? t.spinning : t.spinBtn}</button>
+            <div style={{ display:"flex", gap:10, width:"100%", maxWidth:280 }}>
+              <button onClick={spin} disabled={spinning} style={{
+                flex:1, padding:"14px 0", borderRadius:14, border:"none",
+                cursor:spinning?"not-allowed":"pointer", background:spinning?"rgba(63,63,70,0.5)":"linear-gradient(135deg,#dc2626,#991b1b)",
+                color:spinning?"#71717a":"white", fontWeight:800, fontSize:13, letterSpacing:"0.12em", textTransform:"uppercase",
+                boxShadow:spinning?"none":"0 0 30px rgba(220,38,38,0.35)", transition:"all 0.2s"
+              }}>{spinning ? t.spinning : t.spinBtn}</button>
+              <button onClick={()=>setStats({spins:0,wins:0,bankroll:1000,history:[]})} style={{
+                padding:"14px 14px", borderRadius:14, border:"1px solid rgba(255,255,255,0.1)",
+                cursor:"pointer", background:"transparent", color:"#52525b",
+                fontSize:16, fontWeight:700, transition:"all 0.2s", lineHeight:1
+              }} title="Reset">↺</button>
+            </div>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
             <div style={panel}>
               <p style={panelLabel}>{t.betType}</p>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
+              <div className="bet-grid">
                 {BETS.map(b=>(
-                  <button key={b.id} onClick={()=>setBet(b.id)} style={{
-                    padding:"9px 10px", borderRadius:10, cursor:"pointer",
+                  <button key={b.id} onClick={()=>setBet(b.id)} className="bet-btn" style={{
                     border:`1.5px solid ${bet===b.id?b.color:"rgba(255,255,255,0.08)"}`,
-                    background:bet===b.id?`${b.color}1A`:"transparent", color:bet===b.id?"white":"#71717a",
-                    fontWeight:700, fontSize:12, letterSpacing:"0.08em", transition:"all 0.12s"
+                    background:bet===b.id?`${b.color}1A`:"transparent", color:bet===b.id?"white":"#71717a"
                   }}>{b.label}</button>
                 ))}
               </div>
               <p style={{ color:"#3f3f46", fontSize:11, margin:0 }}>{t.betInfo}</p>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <div className="grid-2col">
               {[{ l:t.bankroll, v:`$${stats.bankroll}`, c:profit>=0?"#4ade80":"#f87171" },
                 { l:t.spins, v:stats.spins, c:"#e4e4e7" },
                 { l:t.winRate, v:winRate==="—"?"—":`${winRate}%`, c:"#94a3b8" },
@@ -361,7 +478,8 @@
             {stats.history.length>1 && (
               <div style={panel}>
                 <p style={panelLabel}>{t.hist}</p>
-                <ResponsiveContainer width="100%" height={105}>
+                <div className="chart-medium" style={{ height:105 }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={stats.history} margin={{ top:4,right:4,bottom:0,left:-24 }}>
                     <defs><linearGradient id="rg" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#dc2626" stopOpacity={0.28}/>
@@ -375,6 +493,7 @@
                     <Area type="monotone" dataKey="bankroll" stroke="#dc2626" fill="url(#rg)" strokeWidth={2} dot={false}/>
                   </AreaChart>
                 </ResponsiveContainer>
+                </div>
               </div>
             )}
             {stats.history.length>0 && (
@@ -398,6 +517,7 @@
       const [data, setData] = useState([]);
       const [totalSims, setTotalSims] = useState(0);
       const [running, setRunning] = useState(false);
+      const [progress, setProgress] = useState(0);
       const panel = { background:"rgba(255,255,255,0.03)", borderRadius:16, padding:16, border:"1px solid rgba(255,255,255,0.07)" };
       const panelLabel = { color:"#71717a", fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", margin:"0 0 10px 0" };
       const metricCard = { background:"rgba(255,255,255,0.025)", borderRadius:12, padding:"12px 14px", border:"1px solid rgba(255,255,255,0.06)" };
@@ -407,21 +527,35 @@
       const runSims = (n) => {
         if(running) return;
         setRunning(true);
-        setTimeout(() => {
-          let sum=0;
-          const MAX_POINTS=300;
-          const step=Math.max(1,Math.floor(n/MAX_POINTS));
-          const pts=[];
-          for(let i=0;i<n;i++){
-            const idx = Math.floor(Math.random()*37);
-            const num = WHEEL[idx];
+        setProgress(0);
+        setData([]);
+
+        const CHUNK = 10000;
+        const MAX_POINTS = 300;
+        const step = Math.max(1, Math.floor(n / MAX_POINTS));
+        let i = 0, sum = 0;
+        const pts = [];
+
+        const tick = () => {
+          const end = Math.min(i + CHUNK, n);
+          for(; i < end; i++){
+            const num = WHEEL[Math.floor(Math.random()*37)];
             sum += (num!==0 && RED.has(num)) ? 1 : -1;
-            if(i%step===0 || i===n-1) pts.push({ i:i+1, mean:sum/(i+1), theory:THEORETICAL_EV });
+            if(i % step === 0 || i === n-1)
+              pts.push({ i: i+1, mean: sum/(i+1), theory: THEORETICAL_EV });
           }
-          setData(pts);
-          setTotalSims(n);
-          setRunning(false);
-        },0);
+          const pct = Math.round((i / n) * 100);
+          setProgress(pct);
+          if(i < n) {
+            requestAnimationFrame(tick);
+          } else {
+            setData([...pts]);
+            setTotalSims(n);
+            setRunning(false);
+            setProgress(100);
+          }
+        };
+        requestAnimationFrame(tick);
       };
 
       const finalMean = data.length>0 ? data[data.length-1].mean : null;
@@ -435,20 +569,32 @@
             <p style={{ color:"#fbbf24", fontFamily:"monospace", fontSize:13, margin:"0 0 18px" }}>
               μ̂ₙ = (1/n) Σ Xᵢ&nbsp;&nbsp;→&nbsp;&nbsp;E[X] = −1/37 ≈ −2.70%
             </p>
-            <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+            <div className="mc-buttons">
               {[1000,10000,100000].map(n=>(
                 <button key={n} onClick={()=>runSims(n)} disabled={running} style={{
                   padding:"11px 22px", borderRadius:12, cursor:running?"not-allowed":"pointer",
                   background:running?"rgba(63,63,70,0.4)":"rgba(220,38,38,0.12)",
                   border:`1px solid ${running?"rgba(255,255,255,0.06)":"rgba(220,38,38,0.3)"}`,
-                  color:running?"#52525b":"#f87171", fontWeight:700, fontSize:13, letterSpacing:"0.05em"
+                  color:running?"#52525b":"#f87171", fontWeight:700, fontSize:13, letterSpacing:"0.05em",
+                  fontFamily:"'JetBrains Mono', monospace", minHeight:44
                 }}>{running?"...":`${n.toLocaleString()} ${t.btnSpins}`}</button>
               ))}
             </div>
+            {running && (
+              <div style={{ marginTop:14 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6, fontSize:11, color:"#52525b" }}>
+                  <span style={{ fontFamily:"monospace" }}>COMPUTING...</span>
+                  <span style={{ fontFamily:"monospace", color:"#f87171" }}>{progress}%</span>
+                </div>
+                <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:6, height:4, overflow:"hidden" }}>
+                  <div style={{ width:`${progress}%`, height:"100%", background:"linear-gradient(90deg,#dc2626,#f87171)", borderRadius:6, transition:"width 0.1s linear" }}/>
+                </div>
+              </div>
+            )}
           </div>
           {data.length>0 && (
             <>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 }}>
+              <div className="grid-3col">
                 {[{ l:t.sims, v:totalSims.toLocaleString(), c:"#e4e4e7" },
                   { l:t.empMean, v:`${(finalMean*100).toFixed(3)}%`, c:"#f87171" },
                   { l:t.theoEv, v:"−2.70%", c:"#94a3b8" }
@@ -461,7 +607,8 @@
               </div>
               <div style={panel}>
                 <p style={panelLabel}>{t.mcConv}</p>
-                <ResponsiveContainer width="100%" height={280}>
+                <div className="chart-tall" style={{ height:280 }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={data} margin={{ top:8,right:16,bottom:0,left:-10 }}>
                     <XAxis dataKey="i" stroke="#3f3f46" tick={{ fontSize:10, fill:"#52525b" }}
                       tickFormatter={v=>v>=1000?`${(v/1000).toFixed(0)}k`:v}/>
@@ -474,6 +621,7 @@
                     <Line type="monotone" dataKey="theory" stroke="#3b82f6" dot={false} strokeWidth={1.5} name="theory" strokeDasharray="5 3" isAnimationActive={false}/>
                   </LineChart>
                 </ResponsiveContainer>
+                </div>
                 <div style={{ display:"flex", gap:20, marginTop:10 }}>
                   {[["#dc2626",t.empMean],["#3b82f6",`${t.theoEv} (−2.70%)`]].map(([c,l])=>(
                     <div key={l} style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:"#71717a" }}>
@@ -516,8 +664,9 @@
             let bankroll=params.bankroll;
             let bet=params.baseBet;
             const path=[bankroll];
+            let wentBust=false;
             for(let s=1;s<=params.maxSpins;s++){
-              if(bankroll<=0 || bankroll<bet){ busts++; break; }
+              if(bankroll<=0 || bankroll<bet){ wentBust=true; break; }
               const idx = Math.floor(Math.random()*37);
               const num = WHEEL[idx];
               const win = num!==0 && RED.has(num);
@@ -525,8 +674,9 @@
               bankroll = Math.max(0,bankroll);
               bet = win?params.baseBet:bet*2;
               path.push(bankroll);
-              if(bankroll<=0){ busts++; break; }
+              if(bankroll<=0){ wentBust=true; break; }
             }
+            if(wentBust) busts++;
             allPaths.push(path);
           }
           const maxLen = Math.max(...allPaths.map(p=>p.length));
@@ -553,7 +703,7 @@
             <p style={panelLabel}>{t.martTitle}</p>
             <p style={{ color:"#52525b", fontSize:13, margin:"0 0 6px", lineHeight:1.6 }}>{t.martDesc}</p>
             <p style={{ color:"#fbbf24", fontFamily:"monospace", fontSize:12, margin:"0 0 18px" }}>{t.martForm}</p>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:16, marginBottom:18 }}>
+            <div className="sliders-row">
               {[{ key:"bankroll", label:t.bankroll, min:200, max:10000, step:100 },
                 { key:"baseBet", label:t.baseBet, min:1, max:100, step:1 },
                 { key:"maxSpins", label:t.maxSpins, min:50, max:500, step:25 }
@@ -574,7 +724,7 @@
             }}>{running ? t.simulating : t.martBtn}</button>
           </div>
           {summary && (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 }}>
+            <div className="grid-3col">
               {[{ l:t.sims, v:summary.n, c:"#e4e4e7" },
                 { l:t.bust, v:`${summary.busts} (${Math.round(summary.busts/summary.n*100)}%)`, c:"#f87171" },
                 { l:t.surv, v:`${summary.survived} (${Math.round(summary.survived/summary.n*100)}%)`, c:"#4ade80" }
@@ -590,7 +740,8 @@
             <>
               <div style={panel}>
                 <p style={panelLabel}>{t.paths}</p>
-                <ResponsiveContainer width="100%" height={300}>
+                <div className="chart-tall" style={{ height:300 }}>
+                <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={paths} margin={{ top:8,right:16,bottom:0,left:-10 }}>
                     <XAxis dataKey="spin" stroke="#3f3f46" tick={{ fontSize:10, fill:"#52525b" }}
                       label={{ value:"Spin #", fill:"#52525b", fontSize:10, position:"insideBottomRight", offset:-4 }}/>
@@ -604,6 +755,7 @@
                     ))}
                   </LineChart>
                 </ResponsiveContainer>
+                </div>
               </div>
               <div style={{ ...panel, borderColor:"rgba(220,38,38,0.25)", background:"rgba(220,38,38,0.04)",
                 textAlign:"center", padding:"24px 20px" }}>
@@ -631,80 +783,78 @@
         { v:"0.000%", l: t.safeSys }, { v:"∞", l: t.riskRuin }
       ];
       const TABS = [
-        { id:"roulette", label: t.tabRoulette },
-        { id:"montecarlo", label: t.tabMC },
-        { id:"martingale", label: t.tabMart }
+        { id:"roulette",   full: t.tabRoulette, short: t.tabRouletteS },
+        { id:"montecarlo", full: t.tabMC,        short: t.tabMCS       },
+        { id:"martingale", full: t.tabMart,      short: t.tabMartS     }
       ];
 
       return (
         <div style={{ minHeight:"100vh", background:"#09090b", color:"white", fontFamily:"'JetBrains Mono', monospace", position:"relative" }}>
           <div className="bg-atmosphere"></div>
           <div className="bg-grid"></div>
-          <header style={{ position:"relative", zIndex:10, display:"flex", alignItems:"center", justifyContent:"space-between",
-            padding:"18px 32px", borderBottom:"1px solid rgba(255,255,255,0.07)", backdropFilter:"blur(12px)", background:"rgba(9,9,11,0.85)" }}>
+
+          <header className="pc-header">
             <div>
               <h1 style={{ fontFamily:"'Bebas Neue', Impact, sans-serif", fontSize:26, letterSpacing:"0.3em", textTransform:"uppercase", margin:0 }}>
                 🎰 PROBABILITY CASINO
               </h1>
               <p style={{ color:"#52525b", fontSize:10, letterSpacing:"0.22em", textTransform:"uppercase", margin:"3px 0 0" }}>{t.subtitle}</p>
             </div>
-            <div style={{ display:"flex", alignItems:"center", gap: 16 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <div className="pc-header-right">
+              <div className="pc-live">
                 <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ade80", animation:"pc-pulse 2s infinite" }}/>
-                <span style={{ color:"#52525b", fontSize:11, letterSpacing:"0.12em" }}>{t.live}</span>
+                <span className="pc-live-label">{t.live}</span>
               </div>
-              <button 
-                className="lang-btn" 
-                onClick={() => setLang(lang === 'en' ? 'it' : 'en')}
-              >
-                {lang === 'en' ? '🇮🇹 ITA' : '🇬🇧 ENG'}
+              <button className="lang-btn" onClick={()=>setLang(lang==='en'?'it':'en')}>
+                {lang==='en' ? '🇮🇹 ITA' : '🇬🇧 ENG'}
               </button>
             </div>
           </header>
-          <section style={{ position:"relative", zIndex:5, maxWidth:1100, margin:"0 auto", padding:"52px 32px 40px", textAlign:"center" }}>
+
+          <section className="pc-hero">
             <div style={{ display:"inline-flex", alignItems:"center", gap:8, border:"1px solid rgba(220,38,38,0.3)",
               background:"rgba(220,38,38,0.08)", padding:"5px 16px", borderRadius:100, marginBottom:20,
               fontSize:11, color:"#f87171", letterSpacing:"0.16em", textTransform:"uppercase" }}>
               <span style={{ width:5, height:5, borderRadius:"50%", background:"#dc2626", display:"inline-block", animation:"pc-pulse 1.5s infinite" }}/>
               {t.engine}
             </div>
-            <h2 style={{ fontFamily:"'Bebas Neue', Impact, sans-serif", fontSize:"clamp(48px,7vw,90px)", lineHeight:1,
+            <h2 style={{ fontFamily:"'Bebas Neue', Impact, sans-serif", fontSize:"clamp(40px,7vw,90px)", lineHeight:1,
               margin:"0 0 20px", letterSpacing:"0.03em" }}>
               {t.beat} <span style={{ color:"#dc2626" }}>{t.house}</span>
             </h2>
             <p style={{ color:"#71717a", fontSize:14, maxWidth:520, margin:"0 auto 36px", lineHeight:1.7 }}>
               {t.desc}
             </p>
-            <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
+            <div className="hero-stats">
               {HERO_STATS.map(s=>(
                 <div key={s.l} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)",
-                  borderRadius:14, padding:"14px 20px", minWidth:100 }}>
+                  borderRadius:14, padding:"14px 20px", minWidth:90 }}>
                   <p style={{ fontFamily:"'Bebas Neue', Impact, sans-serif", fontSize:26, color:"#e4e4e7", margin:0 }}>{s.v}</p>
                   <p style={{ fontSize:10, color:"#52525b", textTransform:"uppercase", letterSpacing:"0.1em", margin:"3px 0 0" }}>{s.l}</p>
                 </div>
               ))}
             </div>
           </section>
-          <div style={{ position:"relative", zIndex:10, maxWidth:1100, margin:"0 auto", padding:"0 32px 60px" }}>
-            <div style={{ display:"flex", gap:3, marginBottom:24, background:"rgba(255,255,255,0.025)",
-              borderRadius:14, padding:4, border:"1px solid rgba(255,255,255,0.06)" }}>
+
+          <div className="pc-content">
+            <div className="tab-bar">
               {TABS.map(tabItem=>(
-                <button key={tabItem.id} onClick={()=>setTab(tabItem.id)} style={{
-                  flex:1, padding:"11px 12px", borderRadius:11, border:"none", cursor:"pointer",
-                  background:tab===tabItem.id?"rgba(220,38,38,0.14)":"transparent",
-                  borderBottom:`2px solid ${tab===tabItem.id?"#dc2626":"transparent"}`,
-                  color:tab===tabItem.id?"#f87171":"#52525b", fontFamily:"'JetBrains Mono', monospace",
-                  fontWeight:700, fontSize:11, letterSpacing:"0.08em", textTransform:"uppercase", transition:"all 0.14s"
-                }}>{tabItem.label}</button>
+                <button key={tabItem.id} onClick={()=>setTab(tabItem.id)} className="tab-btn" style={{
+                  background: tab===tabItem.id ? "rgba(220,38,38,0.14)" : "transparent",
+                  borderBottom: `2px solid ${tab===tabItem.id ? "#dc2626" : "transparent"}`,
+                  color: tab===tabItem.id ? "#f87171" : "#52525b"
+                }}>
+                  <span className="tab-label-full">{tabItem.full}</span>
+                  <span className="tab-label-short">{tabItem.short}</span>
+                </button>
               ))}
             </div>
-            {tab==="roulette" && <RouletteTab t={t} />}
+            {tab==="roulette"   && <RouletteTab t={t} />}
             {tab==="montecarlo" && <MonteCarloTab t={t} />}
             {tab==="martingale" && <MartingaleTab t={t} />}
           </div>
-          <footer style={{ position:"relative", zIndex:5, borderTop:"1px solid rgba(255,255,255,0.06)",
-            padding:"18px 32px", display:"flex", justifyContent:"space-between", alignItems:"center",
-            color:"#3f3f46", fontSize:11, letterSpacing:"0.08em" }}>
+
+          <footer className="pc-footer">
             <span>{t.footerInfo}</span>
             <span>{t.footerTech}</span>
           </footer>
