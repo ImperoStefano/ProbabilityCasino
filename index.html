@@ -742,9 +742,9 @@
                 <p style={panelLabel}>{t.paths}</p>
                 <div className="chart-tall" style={{ height:300 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={paths} margin={{ top:8,right:16,bottom:0,left:-10 }}>
+                  <LineChart data={paths} margin={{ top:8,right:16,bottom:18,left:-10 }}>
                     <XAxis dataKey="spin" stroke="#3f3f46" tick={{ fontSize:10, fill:"#52525b" }}
-                      label={{ value:"Spin #", fill:"#52525b", fontSize:10, position:"insideBottomRight", offset:-4 }}/>
+                      label={{ value:"Spin #", fill:"#52525b", fontSize:10, position:"insideBottom", offset:0 }}/>
                     <YAxis stroke="#3f3f46" tick={{ fontSize:10, fill:"#52525b" }} tickFormatter={v=>`$${v}`}/>
                     <Tooltip contentStyle={{ background:"#18181b", border:"1px solid #3f3f46", borderRadius:8, fontSize:11 }}
                       formatter={v=>[`$${v}`,""]}/>
