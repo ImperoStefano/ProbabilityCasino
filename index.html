@@ -41,12 +41,13 @@
     .pc-header {
       position: relative; z-index: 10;
       display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; row-gap: 8px;
       padding: 16px 32px;
       border-bottom: 1px solid rgba(255,255,255,0.07);
       backdrop-filter: blur(12px);
       background: rgba(9,9,11,0.85);
     }
-    .pc-header-right { display: flex; align-items: center; gap: 16px; }
+    .pc-header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .pc-live { display: flex; align-items: center; gap: 8px; }
     .pc-live-label { color: #52525b; font-size: 11px; letter-spacing: 0.12em; }
 
@@ -120,41 +121,45 @@
     }
     .lang-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
-    /* Selettore numeri multipli */
-    .multi-number-selector {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 8px;
-      max-height: 200px;
-      overflow-y: auto;
-      padding: 8px;
-      background: rgba(0,0,0,0.2);
-      border-radius: 12px;
-      justify-content: center;
+    /* Tavolo roulette autentico (puntate piene) */
+    .roulette-table-wrap { overflow-x: auto; padding-bottom: 4px; }
+    .roulette-table {
+      display: flex; gap: 3px; min-width: 560px;
+      background: rgba(0,0,0,0.25); border-radius: 12px; padding: 8px;
     }
-    .num-check {
-      width: 48px;
-      height: 48px;
-      border-radius: 8px;
-      background: #18181b;
-      border: 1px solid #3f3f46;
-      color: #e4e4e7;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.1s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .tbl-grid { display: flex; gap: 3px; flex: 1; }
+    .tbl-col { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+    .tbl-cell {
+      height: 38px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 12px; cursor: pointer; position: relative; color: white;
+      transition: all 0.12s; border: 1px solid rgba(255,255,255,0.08);
     }
-    .num-check.selected {
-      background: #fbbf24;
-      color: #09090b;
-      border-color: #fbbf24;
-      box-shadow: 0 0 8px #fbbf24;
+    .tbl-cell.tbl-red   { background: #7f1d1d; }
+    .tbl-cell.tbl-black { background: #27272a; }
+    .tbl-cell.tbl-zero {
+      width: 42px; flex-shrink: 0; border-radius: 8px;
+      background: #15803d; border-color: #22c55e;
     }
-    .num-check.zero { background: #15803d; border-color: #22c55e; }
-    .num-check.zero.selected { background: #fbbf24; color: #09090b; border-color: #fbbf24; }
+    .tbl-cell.selected {
+      box-shadow: 0 0 0 2px #fbbf24 inset, 0 0 10px rgba(251,191,36,0.6);
+    }
+    .tbl-chip {
+      position: absolute; bottom: 2px; right: 2px; width: 14px; height: 14px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fde68a, #fbbf24 60%, #b45309);
+      border: 1px solid #78350f;
+    }
+
+    /* Indicatore trofei */
+    .badge-indicator {
+      display: flex; align-items: center; gap: 4px;
+      background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25);
+      color: #fbbf24; padding: 6px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+      font-family: 'JetBrains Mono', monospace; cursor: default; white-space: nowrap;
+    }
+
+    /* Flash di vittoria */
+    @keyframes pc-win-glow { 0% { transform: scale(1); } 30% { transform: scale(1.12); } 100% { transform: scale(1); } }
+    .win-flash { animation: pc-win-glow 0.5s ease-out; }
 
     .bet-category-tabs {
       display: flex;
@@ -199,7 +204,10 @@
       .mc-buttons { flex-direction: column; }
       .mc-buttons button { width: 100%; }
       .bet-grid { grid-template-columns: repeat(2,1fr); }
-      .num-check { width: 42px; height: 42px; font-size: 12px; }
+      .tbl-cell { height: 34px; font-size: 11px; }
+      .tbl-cell.tbl-zero { width: 34px; }
+      .badge-indicator { padding: 5px 8px; font-size: 10px; }
+      .pc-header-right { gap: 8px; }
     }
 
     @media (min-width: 641px) and (max-width: 860px) {
@@ -223,7 +231,7 @@
       }
 
       const { useState, useEffect, useRef } = React;
-      const { AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } = Recharts;
+      const { AreaChart, Area, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } = Recharts;
 
       // ========== DIZIONARIO BILINGUE ==========
       const DICT = {
@@ -266,7 +274,29 @@
           dozen1: "1st Dozen (1-12)", dozen2: "2nd Dozen (13-24)", dozen3: "3rd Dozen (25-36)",
           col1: "1st Column", col2: "2nd Column", col3: "3rd Column",
           singleNumber: "Select numbers (1 or more)", payoutLabel: "Payout", winProb: "Win probability", evLabel: "EV",
-          numbersCovered: "Numbers covered:", totalBetLabel: "Total bet", perNumber: "per number"
+          numbersCovered: "Numbers covered:", totalBetLabel: "Total bet", perNumber: "per number",
+          // Strategy Lab
+          tabStrategyLab: "🧮  STRATEGY LAB", tabStrategyLabS: "🧮",
+          slTitle: "STRATEGY LAB — BET: RED",
+          slDesc: "Five staking systems, one biased wheel. Run thousands of simulated bettors through Martingale, Anti-Martingale, D'Alembert and Fibonacci progressions — then watch which one breaks first.",
+          slTrials: "TRIALS", slRun: "▶  RUN SIMULATION",
+          slBustChart: "RUIN PROBABILITY BY STRATEGY", slBustPct: "Bust %",
+          slSummary: "STRATEGY COMPARISON", slStrategy: "STRATEGY", slMedian: "MEDIAN", slMean: "MEAN",
+          slP95: "BEST 5%", slP5: "WORST 5%", slPaths: "SAMPLE PATHS (15 RUNS)",
+          stratNames: { flat:"Flat Betting", martingale:"Martingale", antimartingale:"Anti-Martingale", dalembert:"D'Alembert", fibonacci:"Fibonacci" },
+          // Strategy explanations
+          slExplTitle: "Strategy Explanations",
+          slExplanations: [
+            { name: "Flat Betting", desc: "Bet the same amount every spin. No progression." },
+            { name: "Martingale", desc: "Double the bet after every loss. Return to the base bet after a win. High risk of ruin." },
+            { name: "Anti-Martingale", desc: "Double the bet after a win. Reset to base bet after a loss or after two consecutive wins. Exploits winning streaks." },
+            { name: "D'Alembert", desc: "Increase the bet by one unit after a loss; decrease by one unit after a win. Less aggressive, still negative EV." },
+            { name: "Fibonacci", desc: "Bet following the Fibonacci sequence (1,1,2,3,5,8...). Move one step forward after a loss, back two steps after a win." }
+          ],
+          // Sound, persistence, achievements
+          soundOn: "Sound on — click to mute", soundOff: "Sound off — click to unmute",
+          resetProgress: "Reset Progress", resetConfirm: "This will erase all saved bankrolls, stats and achievements. Continue?",
+          badgeNames: { first_spin:"First Spin", half_century:"50 Spins Club", high_roller:"High Roller", rock_bottom:"Rock Bottom", natural_21:"Natural Blackjack", card_shark:"Card Shark" }
         },
         it: {
           subtitle: "IL BANCO VINCE SEMPRE", live: "MOTORE LIVE", engine: "MOTORE STOCASTICO v2.0",
@@ -308,7 +338,29 @@
           dozen1: "1ª Dozzina (1-12)", dozen2: "2ª Dozzina (13-24)", dozen3: "3ª Dozzina (25-36)",
           col1: "1ª Colonna", col2: "2ª Colonna", col3: "3ª Colonna",
           singleNumber: "Seleziona numeri (uno o più)", payoutLabel: "Vincita", winProb: "Probabilità", evLabel: "EV",
-          numbersCovered: "Numeri coperti:", totalBetLabel: "Puntata totale", perNumber: "a numero"
+          numbersCovered: "Numeri coperti:", totalBetLabel: "Puntata totale", perNumber: "a numero",
+          // Strategy Lab
+          tabStrategyLab: "🧮  LAB STRATEGIE", tabStrategyLabS: "🧮",
+          slTitle: "LABORATORIO STRATEGIE — PUNTATA: ROSSO",
+          slDesc: "Cinque sistemi di puntata, una ruota truccata in partenza. Simula migliaia di giocatori con Martingala, Anti-Martingala, D'Alembert e Fibonacci — e scopri quale crolla per primo.",
+          slTrials: "PROVE", slRun: "▶  AVVIA SIMULAZIONE",
+          slBustChart: "PROBABILITÀ DI ROVINA PER STRATEGIA", slBustPct: "Rovina %",
+          slSummary: "CONFRONTO STRATEGIE", slStrategy: "STRATEGIA", slMedian: "MEDIANA", slMean: "MEDIA",
+          slP95: "MIGLIOR 5%", slP5: "PEGGIOR 5%", slPaths: "TRAIETTORIE CAMPIONE (15 PROVE)",
+          stratNames: { flat:"Puntata Fissa", martingale:"Martingala", antimartingale:"Anti-Martingala", dalembert:"D'Alembert", fibonacci:"Fibonacci" },
+          // Strategy explanations
+          slExplTitle: "Spiegazione delle strategie",
+          slExplanations: [
+            { name: "Puntata Fissa", desc: "Punta sempre lo stesso importo. Nessuna progressione." },
+            { name: "Martingala", desc: "Raddoppia la puntata dopo ogni perdita. Torna alla puntata base dopo una vincita. Alto rischio di rovina." },
+            { name: "Anti-Martingala", desc: "Raddoppia la puntata dopo una vincita. Resetta alla base dopo una perdita o dopo due vincite consecutive. Sfrutta le serie vincenti." },
+            { name: "D'Alembert", desc: "Aumenta la puntata di una unità dopo una perdita; diminuisci di una dopo una vincita. Meno aggressivo, comunque EV negativo." },
+            { name: "Fibonacci", desc: "Puntata secondo la sequenza di Fibonacci (1,1,2,3,5,8...). Avanza di un passo dopo una perdita, arretra di due dopo una vincita." }
+          ],
+          // Sound, persistenza, trofei
+          soundOn: "Audio attivo — clicca per silenziare", soundOff: "Audio disattivato — clicca per riattivare",
+          resetProgress: "Azzera Progressi", resetConfirm: "Questo cancellerà cassa, statistiche e trofei salvati. Continuare?",
+          badgeNames: { first_spin:"Primo Giro", half_century:"Club dei 50 Giri", high_roller:"Giocatore d'Alto Livello", rock_bottom:"Fondo del Barile", natural_21:"Blackjack Naturale", card_shark:"Squalo delle Carte" }
         }
       };
 
@@ -319,6 +371,94 @@
       const numFill = n => n === 0 ? "#15803d" : RED.has(n) ? "#dc2626" : "#1c1c1e";
       const toRad = d => (d - 90) * Math.PI / 180;
       const polarPt = (cx, cy, r, deg) => [cx + r * Math.cos(toRad(deg)), cy + r * Math.sin(toRad(deg))];
+
+      // ========== SOUND ENGINE (sintetizzato via Web Audio API, nessun asset esterno) ==========
+      const Sound = (() => {
+        let ctx = null;
+        let enabled = true;
+        const getCtx = () => {
+          if (!ctx) {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (AC) ctx = new AC();
+          }
+          return ctx;
+        };
+        const tone = (freq, dur, type, vol, delay) => {
+          if (!enabled) return;
+          try {
+            const c = getCtx();
+            if (!c) return;
+            if (c.state === 'suspended') c.resume();
+            const t0 = c.currentTime + (delay || 0);
+            const osc = c.createOscillator();
+            const gain = c.createGain();
+            osc.type = type || 'sine';
+            osc.frequency.setValueAtTime(freq, t0);
+            gain.gain.setValueAtTime(vol || 0.1, t0);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+            osc.connect(gain);
+            gain.connect(c.destination);
+            osc.start(t0);
+            osc.stop(t0 + dur + 0.02);
+          } catch (e) { /* audio non disponibile, ignora silenziosamente */ }
+        };
+        return {
+          setEnabled: v => { enabled = v; },
+          tick:  () => tone(880, 0.045, 'square', 0.05),
+          chip:  () => tone(540, 0.07, 'triangle', 0.09),
+          deal:  () => tone(300, 0.06, 'triangle', 0.08),
+          card:  () => tone(1100, 0.035, 'square', 0.045),
+          win:   () => { tone(523.25, 0.12, 'sine', 0.14); tone(659.25, 0.12, 'sine', 0.12, 0.09); tone(783.99, 0.2, 'sine', 0.12, 0.18); },
+          lose:  () => { tone(220, 0.22, 'sawtooth', 0.1); tone(174, 0.3, 'sawtooth', 0.09, 0.08); },
+          bust:  () => { tone(160, 0.3, 'sawtooth', 0.13); tone(110, 0.45, 'sawtooth', 0.11, 0.14); },
+          badge: () => { tone(660, 0.09, 'sine', 0.12); tone(990, 0.16, 'sine', 0.12, 0.09); }
+        };
+      })();
+
+      // ========== PERSISTENZA LOCALE (localStorage) ==========
+      const PC_PREFIX = 'probabilityCasino_';
+      const loadState = (key, fallback) => {
+        try {
+          const raw = localStorage.getItem(PC_PREFIX + key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch (e) { return fallback; }
+      };
+      const saveState = (key, value) => {
+        try { localStorage.setItem(PC_PREFIX + key, JSON.stringify(value)); } catch (e) { /* storage non disponibile */ }
+      };
+      const clearAllState = () => {
+        try {
+          Object.keys(localStorage).filter(k => k.indexOf(PC_PREFIX) === 0).forEach(k => localStorage.removeItem(k));
+        } catch (e) { /* storage non disponibile */ }
+      };
+
+      // ========== TROFEI / ACHIEVEMENTS ==========
+      const BADGES = [
+        { id: 'first_spin',   icon: '🎯' },
+        { id: 'half_century', icon: '🎖' },
+        { id: 'high_roller',  icon: '💎' },
+        { id: 'rock_bottom',  icon: '💀' },
+        { id: 'natural_21',   icon: '⭐' },
+        { id: 'card_shark',   icon: '🃏' }
+      ];
+      const computeBadges = () => {
+        const r = loadState('roulette_stats', null);
+        const b = loadState('blackjack_stats', null);
+        const earned = new Set();
+        if (r) {
+          if (r.spins >= 1) earned.add('first_spin');
+          if (r.spins >= 50) earned.add('half_century');
+          if (r.everBusted) earned.add('rock_bottom');
+          if (r.bankroll >= 2000) earned.add('high_roller');
+        }
+        if (b) {
+          if (b.bank >= 2000) earned.add('high_roller');
+          if (b.everBusted) earned.add('rock_bottom');
+          if (b.bj >= 1) earned.add('natural_21');
+          if (b.n >= 25) earned.add('card_shark');
+        }
+        return earned;
+      };
 
       function RouletteWheel({ rotation, spinning }) {
         const cx = 160, cy = 160, OR = 148, IR = 54;
@@ -367,7 +507,9 @@
         const [betCategory, setBetCategory] = useState("external");
         const [betSelection, setBetSelection] = useState("red");
         const [selectedNumbers, setSelectedNumbers] = useState(new Set()); // per puntate multiple
-        const [stats, setStats] = useState({ spins:0, wins:0, bankroll:1000, history:[] });
+        const [stats, setStats] = useState(() => loadState('roulette_stats', { spins:0, wins:0, bankroll:1000, history:[], everBusted:false }));
+        useEffect(() => { saveState('roulette_stats', stats); }, [stats]);
+        const [flashWin, setFlashWin] = useState(false);
         const rotRef = useRef(0);
         const CHIP_PER_NUMBER = 50; // 50 chip per numero selezionato
 
@@ -454,6 +596,7 @@
             alert("Bankroll insufficiente per questa puntata!");
             return;
           }
+          Sound.chip();
           const idx = Math.floor(Math.random()*N);
           const num = WHEEL[idx];
           const targetAngle = 360 - (idx * SA + SA / 2);
@@ -464,27 +607,37 @@
           
           rotRef.current = newRot;
           setSpinning(true);
+          const tickId = setInterval(() => Sound.tick(), 200);
           requestAnimationFrame(() => requestAnimationFrame(() => {
             setRotation(newRot);
             setTimeout(() => {
+              clearInterval(tickId);
               setSpinning(false);
               setResult(num);
               const win = isWin(num);
               const { multiplier, totalBet } = getPayoutInfo();
               let winAmount = win ? totalBet * multiplier : -totalBet;
+              if (win) { Sound.win(); setFlashWin(true); setTimeout(()=>setFlashWin(false), 900); }
+              else Sound.lose();
               // Nel caso di puntata multipla su numeri, se vinci, la vincita è 35 * chip_per_numero, ma hai perso gli altri chip
               // Quindi il calcolo è già corretto: totalBet = chip_per_numero * n_selezionati; se vinci, guadagni 35 * chip_per_numero - (chip_per_numero * (n_selezionati-1)) = chip_per_numero * (35 - (n_selezionati-1)) = chip_per_numero * (36 - n_selezionati)
               // Ma il payout netto è già implementato sopra.
-              setStats(prev => ({
-                spins: prev.spins+1,
-                wins: prev.wins+(win?1:0),
-                bankroll: prev.bankroll + winAmount,
-                history: [...prev.history.slice(-59), {
-                  spin: prev.spins+1,
-                  bankroll: prev.bankroll + winAmount,
-                  num, win
-                }]
-              }));
+              setStats(prev => {
+                const newBankroll = prev.bankroll + winAmount;
+                const busted = newBankroll <= 0;
+                if (busted && !prev.everBusted) setTimeout(() => Sound.bust(), 250);
+                return {
+                  spins: prev.spins+1,
+                  wins: prev.wins+(win?1:0),
+                  bankroll: newBankroll,
+                  everBusted: prev.everBusted || busted,
+                  history: [...prev.history.slice(-59), {
+                    spin: prev.spins+1,
+                    bankroll: newBankroll,
+                    num, win
+                  }]
+                };
+              });
             }, 4300);
           }));
         };
@@ -504,10 +657,10 @@
             <div className="roulette-wheel-col">
               <RouletteWheel rotation={rotation} spinning={spinning}/>
               {result!==null && (
-                <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+                <div className={flashWin ? 'win-flash' : ''} style={{ display:"flex", alignItems:"center", gap:14 }}>
                   <div style={{ width:54, height:54, borderRadius:12, flexShrink:0, background:numFill(result),
                     display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:900, color:"white",
-                    boxShadow:`0 0 20px ${numFill(result)}70` }}>{result}</div>
+                    boxShadow: flashWin ? "0 0 32px 8px rgba(251,191,36,0.65)" : `0 0 20px ${numFill(result)}70` }}>{result}</div>
                   <div><p style={{ color:"#71717a", fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", margin:0 }}>{t.res}</p>
                     <p style={{ fontSize:15, fontWeight:700, margin:"4px 0 0", fontFamily:"monospace",
                       color: result===0?"#4ade80":RED.has(result)?"#f87171":"#d4d4d8" }}>
@@ -525,7 +678,7 @@
                   color:"white", fontWeight:800, fontSize:13, letterSpacing:"0.12em", textTransform:"uppercase",
                   boxShadow:spinning?"none":"0 0 30px rgba(220,38,38,0.35)", transition:"all 0.2s"
                 }}>{spinning ? t.spinning : t.spinBtn}</button>
-                <button onClick={()=>{setStats({spins:0,wins:0,bankroll:1000,history:[]}); setSelectedNumbers(new Set());}} style={{
+                <button onClick={()=>{setStats({spins:0,wins:0,bankroll:1000,history:[],everBusted:false}); setSelectedNumbers(new Set());}} style={{
                   padding:"14px 14px", borderRadius:14, border:"1px solid rgba(255,255,255,0.1)",
                   cursor:"pointer", background:"transparent", color:"#52525b",
                   fontSize:16, fontWeight:700, transition:"all 0.2s", lineHeight:1
@@ -592,13 +745,31 @@
                 {betCategory === 'inside' && (
                   <div>
                     <p style={{ color:"#52525b", fontSize:11, margin:"0 0 8px" }}>{t.singleNumber}</p>
-                    <div className="multi-number-selector">
-                      {[...Array(37).keys()].map(n => (
-                        <div key={n} className={`num-check ${n === 0 ? 'zero' : ''} ${selectedNumbers.has(n) ? 'selected' : ''}`}
-                          onClick={() => toggleNumber(n)}>
-                          {n}
+                    <div className="roulette-table-wrap">
+                      <div className="roulette-table">
+                        <div className={`tbl-cell tbl-zero ${selectedNumbers.has(0) ? 'selected' : ''}`}
+                          onClick={() => toggleNumber(0)}>
+                          0
+                          {selectedNumbers.has(0) && <span className="tbl-chip" />}
                         </div>
-                      ))}
+                        <div className="tbl-grid">
+                          {Array.from({length:12},(_,i)=>i+1).map(col => {
+                            const top = col*3, mid = col*3-1, bottom = col*3-2;
+                            return (
+                              <div key={col} className="tbl-col">
+                                {[top, mid, bottom].map(n => (
+                                  <div key={n}
+                                    className={`tbl-cell ${RED.has(n) ? 'tbl-red' : 'tbl-black'} ${selectedNumbers.has(n) ? 'selected' : ''}`}
+                                    onClick={() => toggleNumber(n)}>
+                                    {n}
+                                    {selectedNumbers.has(n) && <span className="tbl-chip" />}
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -931,6 +1102,275 @@
         );
       }
 
+      // ======================= STRATEGY LAB TAB (nuovo) =======================
+      function StrategyLabTab({ t }) {
+        const panel = { background:"rgba(255,255,255,0.03)", borderRadius:16, padding:16, border:"1px solid rgba(255,255,255,0.07)" };
+        const panelLabel = { color:"#71717a", fontSize:10, letterSpacing:"0.2em", textTransform:"uppercase", margin:"0 0 10px 0" };
+
+        const STRAT_IDS = ['flat','martingale','antimartingale','dalembert','fibonacci'];
+        const STRAT_COLORS = { flat:'#60a5fa', martingale:'#dc2626', antimartingale:'#4ade80', dalembert:'#fbbf24', fibonacci:'#a78bfa' };
+        const FIB = [1,1,2,3,5,8,13,21,34,55,89,144,233,377,610,987];
+
+        const [params, setParams] = useState({ bankroll:1000, unit:10, spins:200, trials:400 });
+        const [running, setRunning] = useState(false);
+        const [results, setResults] = useState(null);
+        const [inspect, setInspect] = useState('martingale');
+
+        const nextBet = (id, unit, state) => {
+          if (id === 'flat') return unit;
+          if (id === 'fibonacci') return unit * FIB[state.fibIdx];
+          return state.bet;
+        };
+
+        const initState = (id, unit) => id === 'fibonacci' ? { fibIdx: 0 } : { bet: unit, winStreak: 0 };
+
+        const applyOutcome = (id, unit, state, win) => {
+          if (id === 'flat') return state;
+          if (id === 'martingale') return { bet: win ? unit : state.bet * 2 };
+          if (id === 'antimartingale') {
+            if (!win) return { bet: unit, winStreak: 0 };
+            const ws = state.winStreak + 1;
+            return ws >= 3 ? { bet: unit, winStreak: 0 } : { bet: state.bet * 2, winStreak: ws };
+          }
+          if (id === 'dalembert') return { bet: win ? Math.max(unit, state.bet - unit) : state.bet + unit };
+          if (id === 'fibonacci') return { fibIdx: win ? Math.max(0, state.fibIdx - 2) : Math.min(FIB.length - 1, state.fibIdx + 1) };
+          return state;
+        };
+
+        const runSimulation = () => {
+          if (running) return;
+          setRunning(true);
+          setTimeout(() => {
+            const { bankroll, unit, spins, trials } = params;
+            const out = {};
+            STRAT_IDS.forEach(id => {
+              const finals = [];
+              let bustCount = 0;
+              const samplePaths = [];
+              for (let tr = 0; tr < trials; tr++) {
+                let bank = bankroll;
+                let state = initState(id, unit);
+                const keepPath = tr < 15;
+                const path = keepPath ? [bank] : null;
+                let busted = false;
+                for (let s = 0; s < spins; s++) {
+                  const bet = nextBet(id, unit, state);
+                  if (bet <= 0 || bank < bet) { busted = true; break; }
+                  const num = WHEEL[Math.floor(Math.random() * N)];
+                  const win = num !== 0 && RED.has(num);
+                  bank += win ? bet : -bet;
+                  state = applyOutcome(id, unit, state, win);
+                  if (keepPath) path.push(bank);
+                  if (bank <= 0) { busted = true; break; }
+                }
+                if (busted) bustCount++;
+                finals.push(Math.max(0, bank));
+                if (keepPath) samplePaths.push(path);
+              }
+              finals.sort((a, b) => a - b);
+              const pick = q => finals[Math.min(finals.length - 1, Math.max(0, Math.floor(q * (finals.length - 1))))];
+              const mean = finals.reduce((a, b) => a + b, 0) / finals.length;
+              out[id] = { bustPct: (bustCount / trials) * 100, median: pick(0.5), mean, p5: pick(0.05), p95: pick(0.95), samplePaths };
+            });
+            setResults(out);
+            setRunning(false);
+            Sound.badge();
+          }, 30);
+        };
+
+        const bustChartData = results ? STRAT_IDS.map(id => ({ name: t.stratNames[id], pct: +results[id].bustPct.toFixed(1), id })) : [];
+
+        const pathChartData = (() => {
+          if (!results || !results[inspect]) return [];
+          const paths = results[inspect].samplePaths;
+          const maxLen = Math.max(...paths.map(p => p.length));
+          const rows = [];
+          for (let i = 0; i < maxLen; i++) {
+            const row = { spin: i };
+            paths.forEach((p, pi) => { row[`p${pi}`] = i < p.length ? p[i] : null; });
+            rows.push(row);
+          }
+          return rows;
+        })();
+
+        return (
+          <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+            <div style={panel}>
+              <p style={panelLabel}>{t.slTitle}</p>
+              <p style={{ color:"#52525b", fontSize:13, margin:"0 0 18px", lineHeight:1.6 }}>{t.slDesc}</p>
+              
+              {/* Strategy explanations – color-based cards */}
+              {t.slExplanations && t.slExplanations.length > 0 && (
+                <div style={{ marginTop: 20,marginBottom: 24  }}>
+                  <p style={{
+                    color: "#a1a1aa", fontSize: 12, textTransform: "uppercase",
+                    letterSpacing: "0.15em", margin: "0 0 14px 0",
+                    borderBottom: "1px solid rgba(255,255,255,0.08)", paddingBottom: 8
+                  }}>{t.slExplTitle}</p>
+
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: 10
+                  }}>
+                    {t.slExplanations.map((item, idx) => {
+                      const colorMap = {
+                        "Flat Betting": "#60a5fa",
+                        "Puntata Fissa": "#60a5fa",
+                        "Martingale": "#dc2626",
+                        "Martingala": "#dc2626",
+                        "Anti-Martingale": "#4ade80",
+                        "Anti-Martingala": "#4ade80",
+                        "D'Alembert": "#fbbf24",
+                        "Fibonacci": "#a78bfa"
+                      };
+                      const accentColor = colorMap[item.name] || "#fbbf24";
+
+                      return (
+                        <div key={idx} style={{
+                          background: `linear-gradient(135deg, ${accentColor}10, ${accentColor}05)`,
+                          border: `1px solid ${accentColor}30`,
+                          borderLeft: `4px solid ${accentColor}`,
+                          borderRadius: 12,
+                          padding: "14px 14px 12px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 6
+                        }}>
+                          <strong style={{
+                            color: accentColor,
+                            fontSize: 13,
+                            fontFamily: "'JetBrains Mono', monospace",
+                            letterSpacing: "0.05em"
+                          }}>
+                            {item.name}
+                          </strong>
+                          <p style={{ color: "#a1a1aa", fontSize: 11, lineHeight: 1.5, margin: 0 }}>
+                            {item.desc}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              <div className="sliders-row">
+                {[
+                  { key:"bankroll", label:t.bankroll, min:200, max:10000, step:100 },
+                  { key:"unit", label:t.baseBet, min:1, max:100, step:1 },
+                  { key:"spins", label:t.maxSpins, min:50, max:500, step:25 },
+                ].map(({key,label,min,max,step}) => (
+                  <div key={key}>
+                    <p style={{ ...panelLabel, marginBottom:6 }}>{label}: <span style={{ color:"#e4e4e7", fontFamily:"monospace" }}>{params[key].toLocaleString()}</span></p>
+                    <input type="range" min={min} max={max} step={step} value={params[key]}
+                      onChange={e=>setParams(p=>({...p,[key]:+e.target.value}))}
+                      style={{ width:"100%", accentColor:"#dc2626" }}/>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16, flexWrap:"wrap" }}>
+                <span style={{ ...panelLabel, margin:0 }}>{t.slTrials}:</span>
+                {[200,400,800].map(n=>(
+                  <button key={n} onClick={()=>setParams(p=>({...p,trials:n}))} style={{
+                    padding:"6px 14px", borderRadius:8, cursor:"pointer", minHeight:32,
+                    border:`1.5px solid ${params.trials===n?'#fbbf24':'rgba(255,255,255,0.1)'}`,
+                    background:params.trials===n?'rgba(251,191,36,0.1)':'transparent',
+                    color:params.trials===n?'#fbbf24':'#71717a', fontFamily:"monospace", fontWeight:700, fontSize:12
+                  }}>{n}</button>
+                ))}
+              </div>
+              <button onClick={runSimulation} disabled={running} style={{
+                padding:"12px 28px", borderRadius:12, border:"none", cursor:running?"not-allowed":"pointer",
+                background:running?"rgba(63,63,70,0.5)":"linear-gradient(135deg,#dc2626,#7f1d1d)",
+                color:running?"#71717a":"white", fontWeight:800, fontSize:14, letterSpacing:"0.1em", textTransform:"uppercase",
+                boxShadow:running?"none":"0 0 24px rgba(220,38,38,0.3)", transition:"all 0.2s"
+              }}>{running ? t.simulating : t.slRun}</button>
+            </div>
+
+            {results && (
+              <>
+                <div style={panel}>
+                  <p style={panelLabel}>{t.slBustChart}</p>
+                  <div style={{ height:220 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={bustChartData} margin={{ top:8,right:16,bottom:0,left:-10 }}>
+                        <XAxis dataKey="name" stroke="#3f3f46" tick={{ fontSize:10, fill:"#a1a1aa" }}/>
+                        <YAxis stroke="#3f3f46" tick={{ fontSize:10, fill:"#52525b" }} tickFormatter={v=>`${v}%`}/>
+                        <Tooltip contentStyle={{ background:"#18181b", border:"1px solid #3f3f46", borderRadius:8, fontSize:11 }}
+                          formatter={v=>[`${v}%`, t.slBustPct]}/>
+                        <Bar dataKey="pct" radius={[6,6,0,0]}>
+                          {bustChartData.map((entry,i)=>(<Cell key={i} fill={STRAT_COLORS[entry.id]}/>))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div style={panel}>
+                  <p style={panelLabel}>{t.slSummary}</p>
+                  <div style={{ overflowX:"auto" }}>
+                    <table style={{ borderCollapse:"collapse", width:"100%", minWidth:480, fontSize:11, fontFamily:"monospace" }}>
+                      <thead>
+                        <tr>
+                          <th style={{ padding:"6px 8px", textAlign:"left", color:"#71717a", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>{t.slStrategy}</th>
+                          <th style={{ padding:"6px 8px", color:"#71717a", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>{t.slBustPct}</th>
+                          <th style={{ padding:"6px 8px", color:"#71717a", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>{t.slMedian}</th>
+                          <th style={{ padding:"6px 8px", color:"#71717a", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>{t.slMean}</th>
+                          <th style={{ padding:"6px 8px", color:"#71717a", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>{t.slP95}</th>
+                          <th style={{ padding:"6px 8px", color:"#71717a", borderBottom:"1px solid rgba(255,255,255,0.08)" }}>{t.slP5}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {STRAT_IDS.map(id => (
+                          <tr key={id}>
+                            <td style={{ padding:"6px 8px", color:STRAT_COLORS[id], fontWeight:800, borderBottom:"1px solid rgba(255,255,255,0.04)" }}>{t.stratNames[id]}</td>
+                            <td style={{ padding:"6px 8px", textAlign:"center", color:"#f87171", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>{results[id].bustPct.toFixed(1)}%</td>
+                            <td style={{ padding:"6px 8px", textAlign:"center", color:"#e4e4e7", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>${Math.round(results[id].median).toLocaleString()}</td>
+                            <td style={{ padding:"6px 8px", textAlign:"center", color:"#e4e4e7", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>${Math.round(results[id].mean).toLocaleString()}</td>
+                            <td style={{ padding:"6px 8px", textAlign:"center", color:"#4ade80", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>${Math.round(results[id].p95).toLocaleString()}</td>
+                            <td style={{ padding:"6px 8px", textAlign:"center", color:"#f87171", borderBottom:"1px solid rgba(255,255,255,0.04)" }}>${Math.round(results[id].p5).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div style={panel}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12, flexWrap:"wrap", gap:8 }}>
+                    <p style={{ ...panelLabel, margin:0 }}>{t.slPaths}</p>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                      {STRAT_IDS.map(id=>(
+                        <button key={id} onClick={()=>setInspect(id)} style={{
+                          padding:"5px 12px", borderRadius:20, cursor:"pointer", minHeight:30,
+                          border:`1.5px solid ${inspect===id?STRAT_COLORS[id]:'rgba(255,255,255,0.1)'}`,
+                          background:inspect===id?`${STRAT_COLORS[id]}1A`:'transparent',
+                          color:inspect===id?STRAT_COLORS[id]:'#71717a', fontFamily:"monospace", fontWeight:700, fontSize:11
+                        }}>{t.stratNames[id]}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="chart-tall" style={{ height:260 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={pathChartData} margin={{ top:8,right:16,bottom:0,left:-10 }}>
+                        <XAxis dataKey="spin" stroke="#3f3f46" tick={{ fontSize:10, fill:"#52525b" }}/>
+                        <YAxis stroke="#3f3f46" tick={{ fontSize:10, fill:"#52525b" }} tickFormatter={v=>`$${v}`}/>
+                        <Tooltip contentStyle={{ background:"#18181b", border:"1px solid #3f3f46", borderRadius:8, fontSize:11 }} formatter={v=>[`$${v}`,""]}/>
+                        <ReferenceLine y={params.bankroll} stroke="#52525b" strokeDasharray="3 3"/>
+                        {Array.from({length:15},(_,i)=>(
+                          <Line key={i} type="monotone" dataKey={`p${i}`} stroke={STRAT_COLORS[inspect]} dot={false}
+                            strokeWidth={1.3} opacity={0.55} isAnimationActive={false} connectNulls/>
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      }
+
       // ======================= BLACKJACK TAB  =======================
       function BlackjackTab({ t }) {
         const panel = { background: "rgba(255,255,255,0.03)", borderRadius: 16, padding: 16, border: "1px solid rgba(255,255,255,0.07)" };
@@ -962,7 +1402,8 @@
         const [dealerFinal, setDealerFinal] = useState([]);
         const [revealD, setRevealD] = useState(false);
         const [bet, setBet] = useState(25);
-        const [stats, setStats] = useState({ n: 0, w: 0, l: 0, p: 0, bj: 0, bank: 1000, bankHistory: [1000], splits: 0 });
+        const [stats, setStats] = useState(() => loadState('blackjack_stats', { n: 0, w: 0, l: 0, p: 0, bj: 0, bank: 1000, bankHistory: [1000], splits: 0, everBusted: false }));
+        useEffect(() => { saveState('blackjack_stats', stats); }, [stats]);
         const [showMap, setShowMap] = useState(false);
 
         // Effetto per le transizioni fluide: quando una mano finisce, aspetta e poi passa alla successiva o al banco
@@ -1029,16 +1470,23 @@
               return { ...hand, done: true, result, net };
             });
             
-            setStats(prev => ({
-              ...prev,
-              n: prev.n + 1,
-              w: prev.w + w,
-              l: prev.l + l,
-              p: prev.p + p,
-              bj: prev.bj + bj,
-              bank: prev.bank + totalNet,
-              bankHistory: [...prev.bankHistory.slice(-59), prev.bank + totalNet]
-            }));
+            setStats(prev => {
+              const newBank = prev.bank + totalNet;
+              const busted = newBank <= 0;
+              if (busted && !prev.everBusted) setTimeout(() => Sound.bust(), 300);
+              return {
+                ...prev,
+                n: prev.n + 1,
+                w: prev.w + w,
+                l: prev.l + l,
+                p: prev.p + p,
+                bj: prev.bj + bj,
+                bank: newBank,
+                everBusted: prev.everBusted || busted,
+                bankHistory: [...prev.bankHistory.slice(-59), newBank]
+              };
+            });
+            if (totalNet > 0) Sound.win(); else if (totalNet < 0) Sound.lose();
             
             setDealerFinal(dealerCards);
             setRevealD(true);
@@ -1053,6 +1501,7 @@
           const hand = hands[activeHand];
           if (!canSplit(hand.cards)) return;
           if (stats.bank < hand.bet) return;
+          Sound.chip();
           const card1 = hand.cards[0];
           const card2 = hand.cards[1];
           const newHand1 = { cards: [card1], bet: hand.bet, doubled: false, done: false, result: null };
@@ -1095,6 +1544,7 @@
           if (phase !== 'playingHand') return;
           const hand = hands[activeHand];
           if (hand.done) return;
+          Sound.card();
           
           const newCard = shoe[0];
           const newShoe = shoe.slice(1);
@@ -1135,6 +1585,7 @@
           if (phase !== 'playingHand') return;
           const hand = hands[activeHand];
           if (hand.cards.length !== 2 || stats.bank < hand.bet) return;
+          Sound.card();
           const newBet = hand.bet * 2;
           
           const newCard = shoe[0];
@@ -1168,6 +1619,7 @@
             setStats(prev => ({ ...prev, bank: 1000, bankHistory: [...prev.bankHistory, 1000] }));
             return;
           }
+          Sound.deal();
           const deck = mkDeck();
           const playerCards = [deck[0], deck[2]];
           const dealerCards = [deck[1], deck[3]];
@@ -1516,17 +1968,42 @@
       // ======================= APP =======================
       function App() {
         const [tab, setTab] = useState("roulette");
-        const [lang, setLang] = useState("en");
+        const [lang, setLang] = useState(() => loadState('lang', 'en'));
+        const [soundOn, setSoundOn] = useState(() => loadState('soundOn', true));
+        const [badgeSet, setBadgeSet] = useState(() => computeBadges());
         const t = DICT[lang];
+
+        useEffect(() => { Sound.setEnabled(soundOn); }, []);
+
+        useEffect(() => {
+          const refresh = () => {
+            const fresh = computeBadges();
+            setBadgeSet(prev => {
+              if (fresh.size > prev.size) Sound.badge();
+              return fresh;
+            });
+          };
+          const id = setInterval(refresh, 2500);
+          return () => clearInterval(id);
+        }, []);
+
+        const toggleLang = () => { const nl = lang === 'en' ? 'it' : 'en'; setLang(nl); saveState('lang', nl); };
+        const toggleSound = () => { const ns = !soundOn; setSoundOn(ns); Sound.setEnabled(ns); saveState('soundOn', ns); };
+        const handleResetProgress = () => {
+          if (window.confirm(t.resetConfirm)) { clearAllState(); window.location.reload(); }
+        };
+        const badgeTitle = BADGES.map(b => `${badgeSet.has(b.id) ? '✓' : '○'} ${b.icon} ${t.badgeNames[b.id]}`).join('\n');
+
         const HERO_STATS = [
           { v:"−2.70%", l: t.hEdge }, { v:"18/37", l: t.pRed },
           { v:"0.000%", l: t.safeSys }, { v:"∞", l: t.riskRuin }
         ];
         const TABS = [
-          { id:"roulette",   full: t.tabRoulette, short: t.tabRouletteS },
-          { id:"montecarlo", full: t.tabMC,        short: t.tabMCS       },
-          { id:"martingale", full: t.tabMart,      short: t.tabMartS     },
-          { id:"blackjack",  full: t.tabBJ,        short: t.tabBJS       }
+          { id:"roulette",    full: t.tabRoulette,     short: t.tabRouletteS },
+          { id:"montecarlo",  full: t.tabMC,           short: t.tabMCS       },
+          { id:"martingale",  full: t.tabMart,         short: t.tabMartS     },
+          { id:"strategylab", full: t.tabStrategyLab,  short: t.tabStrategyLabS },
+          { id:"blackjack",   full: t.tabBJ,           short: t.tabBJS       }
         ];
 
         return (
@@ -1543,7 +2020,13 @@
                   <div style={{ width:7, height:7, borderRadius:"50%", background:"#4ade80", animation:"pc-pulse 2s infinite" }}/>
                   <span className="pc-live-label">{t.live}</span>
                 </div>
-                <button className="lang-btn" onClick={()=>setLang(lang==='en'?'it':'en')}>
+                <div className="badge-indicator" title={badgeTitle}>
+                  🏆 <span>{badgeSet.size}/{BADGES.length}</span>
+                </div>
+                <button className="lang-btn" onClick={toggleSound} title={soundOn ? t.soundOn : t.soundOff}>
+                  {soundOn ? '🔊' : '🔇'}
+                </button>
+                <button className="lang-btn" onClick={toggleLang}>
                   {lang==='en' ? '🇮🇹 ITA' : '🇬🇧 ENG'}
                 </button>
               </div>
@@ -1587,11 +2070,18 @@
               {tab==="roulette"   && <RouletteTab t={t} />}
               {tab==="montecarlo" && <MonteCarloTab t={t} />}
               {tab==="martingale" && <MartingaleTab t={t} />}
+              {tab==="strategylab" && <StrategyLabTab t={t} />}
               {tab==="blackjack"  && <BlackjackTab t={t} />}
             </div>
             <footer className="pc-footer">
               <span>{t.footerInfo}</span>
-              <span>{t.footerTech}</span>
+              <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+                <button onClick={handleResetProgress} style={{
+                  background:"transparent", border:"none", color:"#3f3f46", fontSize:11, letterSpacing:"0.08em",
+                  cursor:"pointer", fontFamily:"'JetBrains Mono', monospace", textDecoration:"underline", padding:0
+                }}>{t.resetProgress}</button>
+                <span>{t.footerTech}</span>
+              </div>
             </footer>
           </div>
         );
